@@ -1,243 +1,5 @@
-
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Up Bank Automation</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-            color: white;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .header h1 {
-            font-size: 2.5em;
-            margin: 0;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .card {
-            background: rgba(255,255,255,0.1);
-            border-radius: 15px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        
-        .card h3 {
-            margin: 0 0 10px 0;
-            font-size: 1.2em;
-        }
-        
-        .card .value {
-            font-size: 1.8em;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        
-        .controls {
-            text-align: center;
-            margin: 30px 0;
-        }
-        
-        .btn {
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            font-size: 16px;
-            border-radius: 25px;
-            cursor: pointer;
-            margin: 0 10px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-        }
-        
-        .btn.stop {
-            background: linear-gradient(45deg, #f44336, #e91e63);
-        }
-        
-        .btn.ip-rotate {
-            background: linear-gradient(45deg, #ff9800, #ff5722);
-        }
-        
-        .activity-log {
-            background: rgba(0,0,0,0.3);
-            border-radius: 10px;
-            padding: 20px;
-            max-height: 300px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-        }
-        
-        .log-entry {
-            margin-bottom: 8px;
-            opacity: 0.9;
-        }
-        
-        .status-running { color: #4CAF50; }
-        .status-stopped { color: #f44336; }
-        .status-break { color: #ff9800; }
-        
-        @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-            .btn {
-                display: block;
-                margin: 10px auto;
-                width: 200px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🏦 Enhanced Up Bank Automation</h1>
-            <p>Advanced IP rotation • Segmented runtime • Real-time monitoring</p>
-        </div>
-        
-        <div class="stats-grid">
-            <div class="card">
-                <h3>🟢 Status</h3>
-                <div class="value" id="status">Loading...</div>
-                <small id="last-update">Last update: Never</small>
-            </div>
-            
-            <div class="card">
-                <h3>💰 Total Transfers</h3>
-                <div class="value" id="total-transfers">0</div>
-                <small>Total Amount: $<span id="total-amount">0.00</span></small>
-            </div>
-            
-            <div class="card">
-                <h3>🌐 Current IP</h3>
-                <div class="value" id="current-ip">Unknown</div>
-                <small>Auto-rotation active</small>
-            </div>
-            
-            <div class="card">
-                <h3>📊 Balance</h3>
-                <div class="value">$<span id="balance">0.00</span></div>
-                <small>Last checked balance</small>
-            </div>
-            
-            <div class="card">
-                <h3>⏱️ Segment Info</h3>
-                <div class="value" id="segment-count">0</div>
-                <small id="segment-end">No active segment</small>
-            </div>
-            
-            <div class="card">
-                <h3>❌ Errors</h3>
-                <div class="value" id="errors">0</div>
-                <small>System errors logged</small>
-            </div>
-        </div>
-        
-        <div class="controls">
-            <button class="btn" onclick="startAutomation()">▶️ Start</button>
-            <button class="btn stop" onclick="stopAutomation()">⏹️ Stop</button>
-            <button class="btn ip-rotate" onclick="rotateIP()">🔄 Rotate IP</button>
-        </div>
-        
-        <div class="card">
-            <h3>📋 Activity Log</h3>
-            <div class="activity-log" id="activity-log">
-                <div class="log-entry">🚀 System initialized</div>
-                <div class="log-entry">🔗 Connected to Up Bank API</div>
-                <div class="log-entry">🌐 IP rotation enabled</div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        function updateStats() {
-            fetch('/api/stats')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('status').textContent = data.status;
-                    document.getElementById('status').className = 'value status-' + data.status.toLowerCase();
-                    document.getElementById('total-transfers').textContent = data.total_transfers;
-                    document.getElementById('total-amount').textContent = data.total_amount.toFixed(2);
-                    document.getElementById('current-ip').textContent = data.current_ip;
-                    document.getElementById('balance').textContent = data.balance.toFixed(2);
-                    document.getElementById('segment-count').textContent = data.segment_count;
-                    document.getElementById('errors').textContent = data.errors;
-                    document.getElementById('last-update').textContent = 'Last update: ' + data.last_update;
-                    
-                    if (data.segment_end) {
-                        document.getElementById('segment-end').textContent = 'Ends: ' + data.segment_end;
-                    }
-                    
-                    if (data.last_action !== 'None') {
-                        const logDiv = document.getElementById('activity-log');
-                        const newEntry = document.createElement('div');
-                        newEntry.className = 'log-entry';
-                        newEntry.textContent = `${new Date().toLocaleTimeString()} - ${data.last_action}`;
-                        logDiv.insertBefore(newEntry, logDiv.firstChild);
-                        
-                        // Keep only last 20 entries
-                        while (logDiv.children.length > 20) {
-                            logDiv.removeChild(logDiv.lastChild);
-                        }
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-        }
-        
-        function startAutomation() {
-            fetch('/api/start')
-                .then(response => response.json())
-                .then(data => alert(data.message));
-        }
-        
-        function stopAutomation() {
-            fetch('/api/stop')
-                .then(response => response.json())
-                .then(data => alert(data.message));
-        }
-        
-        function rotateIP() {
-            fetch('/api/force_ip_rotation')
-                .then(response => response.json())
-                .then(data => alert(data.message));
-        }
-        
-        // Update stats every 5 seconds
-        setInterval(updateStats, 5000);
-        updateStats(); // Initial load
-    </script>
-</body>
-</html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -248,39 +10,39 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 10px;
         }
-        
+
         .container {
             max-width: 100%;
             margin: 0 auto;
             height: 100%;
         }
-        
+
         .header {
             text-align: center;
             color: white;
             margin-bottom: 20px;
         }
-        
+
         .header h1 {
             font-size: 2em;
             margin-bottom: 5px;
             font-weight: bold;
         }
-        
+
         .dashboard {
             display: grid;
             grid-template-columns: 1fr;
             gap: 15px;
             margin-bottom: 20px;
         }
-        
+
         .card {
             background: white;
             border-radius: 8px;
@@ -290,11 +52,11 @@
             transform: scale(0.7);
             margin: -15px -10px;
         }
-        
+
         .card:hover {
-            transform: translateY(-2px);
+            transform: scale(0.72);
         }
-        
+
         .card h3 {
             color: #333;
             margin-bottom: 15px;
@@ -305,7 +67,7 @@
             align-items: center;
             gap: 8px;
         }
-        
+
         .status {
             font-size: 1em;
             font-weight: bold;
@@ -315,22 +77,27 @@
             margin: 15px 0;
             text-transform: uppercase;
         }
-        
+
         .status.running {
             background: #4CAF50;
             color: white;
         }
-        
+
         .status.stopped {
             background: #f44336;
             color: white;
         }
-        
+
         .status.starting {
             background: #ff9800;
             color: white;
         }
-        
+
+        .status.break {
+            background: #ff9800;
+            color: white;
+        }
+
         .metric {
             display: flex;
             justify-content: space-between;
@@ -338,52 +105,23 @@
             padding: 8px 0;
             border-bottom: 1px solid #eee;
         }
-        
+
         .metric:last-child {
             border-bottom: none;
         }
-        
+
         .metric-label {
             color: #666;
             font-weight: 500;
             font-size: 0.9em;
         }
-        
+
         .metric-value {
             color: #333;
             font-weight: bold;
             font-size: 1em;
         }
-        
-        .controls {
-            text-align: center;
-            margin: 15px 0;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        
-        .btn {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 0.75em;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: bold;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        
-        .btn.stop {
-            background: linear-gradient(45deg, #f44336, #e91e63);
-        }
-        
+
         .activity-log {
             background: #1a1a1a;
             color: #00ff00;
@@ -395,49 +133,44 @@
             margin-top: 20px;
             font-size: 0.85em;
         }
-        
+
         .log-entry {
             margin-bottom: 5px;
             opacity: 0.8;
             line-height: 1.4;
         }
-        
+
         .log-entry.highlight {
             opacity: 1;
             color: #ffff00;
         }
-        
+
         @keyframes pulse {
             0% { opacity: 1; }
             50% { opacity: 0.7; }
             100% { opacity: 1; }
         }
-        
+
         .updating {
             animation: pulse 1s infinite;
         }
-        
+
         /* Mobile specific adjustments */
         @media (max-width: 480px) {
             body {
                 padding: 5px;
             }
-            
+
             .header h1 {
                 font-size: 1.8em;
             }
-            
+
             .card {
                 padding: 8px;
                 transform: scale(0.65);
                 margin: -20px -15px;
             }
-            
-            .btn {
-                padding: 6px 10px;
-                font-size: 0.7em;
-            }
-            
+
             .activity-log {
                 max-height: 120px;
                 font-size: 0.75em;
@@ -449,8 +182,9 @@
     <div class="container">
         <div class="header">
             <h1>NERD</h1>
+            <p>Auto-rotating • Segmented runtime • Real-time monitoring</p>
         </div>
-        
+
         <div class="dashboard">
             <div class="card">
                 <h3>🔄 System Status</h3>
@@ -460,13 +194,21 @@
                     <span class="metric-value" id="lastUpdate">Never</span>
                 </div>
                 <div class="metric">
+                    <span class="metric-label">Current IP:</span>
+                    <span class="metric-value" id="currentIP">Unknown</span>
+                </div>
+                <div class="metric">
                     <span class="metric-label">Errors:</span>
                     <span class="metric-value" id="errors">0</span>
                 </div>
             </div>
-            
+
             <div class="card">
                 <h3>💰 Financial Metrics</h3>
+                <div class="metric">
+                    <span class="metric-label">Account Balance:</span>
+                    <span class="metric-value" id="balance">$0.00</span>
+                </div>
                 <div class="metric">
                     <span class="metric-label">Total Transfers:</span>
                     <span class="metric-value" id="totalTransfers">0</span>
@@ -475,37 +217,35 @@
                     <span class="metric-label">Total Amount:</span>
                     <span class="metric-value" id="totalAmount">$0.00</span>
                 </div>
-                <div class="metric">
-                    <span class="metric-label">Saver Balance:</span>
-                    <span class="metric-value" id="balance">$0.00</span>
-                </div>
             </div>
-            
+
             <div class="card">
-                <h3>📈 Last Activity</h3>
+                <h3>📈 Runtime Info</h3>
                 <div class="metric">
-                    <span class="metric-label">Action:</span>
+                    <span class="metric-label">Segment Count:</span>
+                    <span class="metric-value" id="segmentCount">0</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Segment Ends:</span>
+                    <span class="metric-value" id="segmentEnd">No active segment</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Last Action:</span>
                     <span class="metric-value" id="lastAction">None</span>
                 </div>
             </div>
         </div>
-        
-        <div class="controls">
-            <button class="btn" onclick="startAutomation()">▶️ Start Automation</button>
-            <button class="btn stop" onclick="stopAutomation()">⏹️ Stop Automation</button>
-            <button class="btn" onclick="refreshStats()">🔄 Refresh</button>
-        </div>
-        
+
         <div class="activity-log" id="activityLog">
-            <div class="log-entry">🚀 Dashboard initialized - Ready to start automation</div>
-            <div class="log-entry">📊 Real-time monitoring enabled</div>
-            <div class="log-entry">🔗 Connected to Up Bank API</div>
+            <div class="log-entry">🚀 Automated system running - No manual intervention needed</div>
+            <div class="log-entry">🔄 IP rotation and timing fully automated</div>
+            <div class="log-entry">📊 Real-time monitoring active</div>
         </div>
     </div>
 
     <script>
         let logCount = 3;
-        
+
         function updateStats() {
             fetch('/api/stats')
                 .then(response => response.json())
@@ -514,49 +254,28 @@
                     const statusEl = document.getElementById('status');
                     statusEl.textContent = data.status.toUpperCase();
                     statusEl.className = `status ${data.status.toLowerCase()}`;
-                    
+
                     // Update metrics
                     document.getElementById('lastUpdate').textContent = data.last_update;
+                    document.getElementById('currentIP').textContent = data.current_ip || 'Unknown';
                     document.getElementById('errors').textContent = data.errors;
                     document.getElementById('totalTransfers').textContent = data.total_transfers;
                     document.getElementById('totalAmount').textContent = `$${data.total_amount.toFixed(2)}`;
                     document.getElementById('balance').textContent = `$${data.balance.toFixed(2)}`;
+                    document.getElementById('segmentCount').textContent = data.segment_count;
+                    document.getElementById('segmentEnd').textContent = data.segment_end || 'No active segment';
                     document.getElementById('lastAction').textContent = data.last_action;
+
+                    // Log significant changes
+                    if (data.last_action && data.last_action !== 'None') {
+                        addLogEntry(`💫 ${data.last_action}`, false);
+                    }
                 })
                 .catch(error => {
                     addLogEntry('❌ Failed to fetch stats: ' + error.message, true);
                 });
         }
-        
-        function startAutomation() {
-            fetch('/api/start')
-                .then(response => response.json())
-                .then(data => {
-                    addLogEntry('🚀 ' + data.message, true);
-                    updateStats();
-                })
-                .catch(error => {
-                    addLogEntry('❌ Failed to start: ' + error.message, true);
-                });
-        }
-        
-        function stopAutomation() {
-            fetch('/api/stop')
-                .then(response => response.json())
-                .then(data => {
-                    addLogEntry('⏹️ ' + data.message, true);
-                    updateStats();
-                })
-                .catch(error => {
-                    addLogEntry('❌ Failed to stop: ' + error.message, true);
-                });
-        }
-        
-        function refreshStats() {
-            addLogEntry('🔄 Refreshing statistics...', true);
-            updateStats();
-        }
-        
+
         function addLogEntry(message, highlight = false) {
             const logEl = document.getElementById('activityLog');
             const entry = document.createElement('div');
@@ -564,21 +283,20 @@
             entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
             logEl.appendChild(entry);
             logEl.scrollTop = logEl.scrollHeight;
-            
-            // Keep only last 50 entries
+
+            // Keep only last 30 entries
             logCount++;
-            if (logCount > 50) {
+            if (logCount > 30) {
                 logEl.removeChild(logEl.firstChild);
-                logCount = 50;
+                logCount = 30;
             }
         }
-        
+
         // Auto-refresh every 5 seconds
         setInterval(updateStats, 5000);
-        
+
         // Initial load
         updateStats();
-        addLogEntry('📱 Dashboard ready for Up Bank automation', true);
     </script>
 </body>
 </html>
