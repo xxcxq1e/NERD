@@ -231,77 +231,7 @@
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
         }
 
-        .activity-log {
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 255, 0, 0.3);
-            color: #00ff00;
-            border-radius: 12px;
-            padding: 12px;
-            font-family: 'Courier New', monospace;
-            max-height: 150px;
-            overflow-y: auto;
-            margin-top: 15px;
-            font-size: 0.54em;
-            box-shadow: 
-                0 5px 20px rgba(0, 0, 0, 0.5),
-                inset 0 0 12px rgba(0, 255, 0, 0.1);
-            position: relative;
-        }
-
-        .activity-log::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #00ff00, transparent);
-            animation: scan 3s linear infinite;
-        }
-
-        @keyframes scan {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-
-        .log-entry {
-            margin-bottom: 5px;
-            opacity: 0.8;
-            line-height: 1.3;
-            padding: 3px 6px;
-            border-radius: 3px;
-            transition: all 0.3s ease;
-        }
-
-        .log-entry:hover {
-            background: rgba(0, 255, 0, 0.1);
-            opacity: 1;
-            transform: translateX(3px);
-        }
-
-        .log-entry.highlight {
-            opacity: 1;
-            color: #ffff00;
-            text-shadow: 0 0 10px #ffff00;
-            background: rgba(255, 255, 0, 0.1);
-        }
-
-        /* Custom scrollbar */
-        .activity-log::-webkit-scrollbar {
-            width: 5px;
-        }
-
-        .activity-log::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-        }
-
-        .activity-log::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, #00ff00, #0080ff);
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-        }
+        
 
         .updating {
             animation: update-pulse 1s infinite;
@@ -329,11 +259,7 @@
                 border-radius: 15px;
             }
 
-            .activity-log {
-                max-height: 180px;
-                font-size: 0.8em;
-                padding: 15px;
-            }
+            
 
             .status {
                 padding: 12px 15px;
@@ -418,16 +344,10 @@
             </div>
         </div>
 
-        <div class="activity-log" id="activityLog">
-            <div class="log-entry">🚀 Automated system running - No manual intervention needed</div>
-            <div class="log-entry">🔄 IP rotation and timing fully automated</div>
-            <div class="log-entry">📊 Real-time monitoring active</div>
-        </div>
+        
     </div>
 
     <script>
-        let logCount = 3;
-
         function updateStats() {
             fetch('/api/stats')
                 .then(response => response.json())
@@ -447,31 +367,10 @@
                     document.getElementById('segmentCount').textContent = data.segment_count;
                     document.getElementById('segmentEnd').textContent = data.segment_end || 'No active segment';
                     document.getElementById('lastAction').textContent = data.last_action;
-
-                    // Log significant changes
-                    if (data.last_action && data.last_action !== 'None') {
-                        addLogEntry(`💫 ${data.last_action}`, false);
-                    }
                 })
                 .catch(error => {
-                    addLogEntry('❌ Failed to fetch stats: ' + error.message, true);
+                    console.error('Failed to fetch stats:', error);
                 });
-        }
-
-        function addLogEntry(message, highlight = false) {
-            const logEl = document.getElementById('activityLog');
-            const entry = document.createElement('div');
-            entry.className = highlight ? 'log-entry highlight' : 'log-entry';
-            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            logEl.appendChild(entry);
-            logEl.scrollTop = logEl.scrollHeight;
-
-            // Keep only last 30 entries
-            logCount++;
-            if (logCount > 30) {
-                logEl.removeChild(logEl.firstChild);
-                logCount = 30;
-            }
         }
 
         // Auto-refresh every 5 seconds
