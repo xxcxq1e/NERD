@@ -24,9 +24,9 @@ IP_POOL = [
     "192.248.151.89", "144.202.67.234", "66.42.76.143", "173.199.118.92"
 ]
 
-SEGMENT_DURATION = 3 * 24 * 3600  # 3 days in seconds
-RANDOMIZE_CUTOFF_RANGE = (2 * 3600, 8 * 3600)  # 2-8 hours
-RESUME_DELAY_RANGE = (30 * 60, 3 * 3600)  # 30 minutes to 3 hours
+SEGMENT_DURATION = 22 * 3600  # 22 hours daily runtime
+RANDOMIZE_CUTOFF_RANGE = (1800, 3600)  # Random 30min-1hr variance 
+RESUME_DELAY_RANGE = (2 * 3600, 2 * 3600)  # Exactly 2 hours break daily
 
 # Global variables for dashboard
 app = Flask(__name__)
@@ -41,14 +41,20 @@ automation_stats = {
     'current_ip': 'Unknown',
     'segment_end': None,
     'next_resume': None,
-    'segment_count': 0
+    'segment_count': 0,
+    'daily_target': 50.0,
+    'monthly_target': 1500.0,
+    'daily_progress': 0.0,
+    'monthly_progress': 0.0,
+    'last_reset': datetime.now().strftime('%Y-%m-%d'),
+    'ip_rotations_today': 0
 }
 
 class IPRotator:
     def __init__(self):
         self.current_ip = None
         self.last_rotation = 0
-        self.rotation_interval = random.randint(3600, 7200)  # 1-2 hours
+        self.rotation_interval = random.randint(1800, 10800)  # 30 minutes to 3 hours - completely random
     
     def get_current_ip(self):
         try:
@@ -87,7 +93,7 @@ class IPRotator:
             self.simulate_ip_change()
         
         self.last_rotation = time.time()
-        self.rotation_interval = random.randint(3600, 7200)
+        self.rotation_interval = random.randint(1800, 10800)  # Completely random 30min-3hr intervals
         automation_stats['current_ip'] = self.current_ip
 
 class SegmentedRuntime:
@@ -106,8 +112,9 @@ class SegmentedRuntime:
         automation_stats['segment_end'] = datetime.fromtimestamp(self.segment_end).strftime('%Y-%m-%d %H:%M:%S')
         automation_stats['segment_count'] += 1
         
-        print(f"🚀 Starting segment #{automation_stats['segment_count']}")
-        print(f"📅 Segment will end: {automation_stats['segment_end']}")
+        print(f"🚀 Starting 22-hour runtime #{automation_stats['segment_count']}")
+        print(f"📅 Runtime ends: {automation_stats['segment_end']}")
+        print(f"🎯 Daily target: ${automation_stats['daily_target']} | Monthly: ${automation_stats['monthly_target']}")
     
     def check_segment_end(self):
         if not self.is_in_break and time.time() >= self.segment_end:
@@ -123,7 +130,8 @@ class SegmentedRuntime:
         automation_stats['next_resume'] = datetime.fromtimestamp(self.resume_time).strftime('%Y-%m-%d %H:%M:%S')
         automation_stats['status'] = 'Break'
         
-        print(f"⏸️ Starting break. Resume at: {automation_stats['next_resume']}")
+        print(f"⏸️ Starting 2-hour daily break. Resume at: {automation_stats['next_resume']}")
+        print(f"📊 Today's progress: ${automation_stats['daily_progress']:.2f}/${automation_stats['daily_target']:.2f}")
     
     def check_resume(self):
         if self.is_in_break and time.time() >= self.resume_time:
@@ -198,9 +206,13 @@ class UpBank:
                 global automation_stats
                 automation_stats['total_transfers'] += 1
                 automation_stats['total_amount'] += amount
+                automation_stats['daily_progress'] += amount
+                automation_stats['monthly_progress'] += amount
                 automation_stats['last_action'] = f"${amount:.2f} from {_from} to {_to}: {desc}"
                 automation_stats['last_update'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                print(f"✅ Transfer successful: ${amount:.2f} from {_from} to {_to}")
+                
+                daily_remaining = automation_stats['daily_target'] - automation_stats['daily_progress']
+                print(f"✅ Transfer: ${amount:.2f} | Daily remaining: ${daily_remaining:.2f}")
             else:
                 print(f"❌ Transfer failed: {response.status_code}")
                 automation_stats['errors'] += 1
@@ -244,9 +256,19 @@ def run_automation():
             if automation_stats['status'] == 'Break':
                 continue
             
-            # IP rotation check
+            # Check for daily reset
+            today = datetime.now().strftime('%Y-%m-%d')
+            if automation_stats['last_reset'] != today:
+                automation_stats['daily_progress'] = 0.0
+                automation_stats['ip_rotations_today'] = 0
+                automation_stats['last_reset'] = today
+                print(f"🔄 Daily reset - New target: ${automation_stats['daily_target']}")
+
+            # IP rotation check - completely automatic and random
             if ip_rotator.should_rotate():
                 ip_rotator.rotate()
+                automation_stats['ip_rotations_today'] += 1
+                print(f"🔄 IP rotation #{automation_stats['ip_rotations_today']} today")
             
             # Main automation logic
             action = random.choice(['micro', 'spend', 'interest', 'balance_check'])
