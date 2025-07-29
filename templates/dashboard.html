@@ -46,10 +46,12 @@
         
         .card {
             background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             transition: transform 0.3s ease;
+            transform: scale(0.7);
+            margin: -15px -10px;
         }
         
         .card:hover {
@@ -118,19 +120,19 @@
         
         .controls {
             text-align: center;
-            margin: 20px 0;
+            margin: 15px 0;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 8px;
         }
         
         .btn {
             background: linear-gradient(45deg, #667eea, #764ba2);
             color: white;
             border: none;
-            padding: 15px 20px;
-            border-radius: 8px;
-            font-size: 1em;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.75em;
             cursor: pointer;
             transition: all 0.3s ease;
             font-weight: bold;
@@ -189,17 +191,19 @@
             }
             
             .card {
-                padding: 15px;
+                padding: 8px;
+                transform: scale(0.65);
+                margin: -20px -15px;
             }
             
             .btn {
-                padding: 12px 15px;
-                font-size: 0.9em;
+                padding: 6px 10px;
+                font-size: 0.7em;
             }
             
             .activity-log {
-                max-height: 150px;
-                font-size: 0.8em;
+                max-height: 120px;
+                font-size: 0.75em;
             }
         }
     </style>
