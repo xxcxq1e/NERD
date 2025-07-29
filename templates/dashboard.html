@@ -170,6 +170,43 @@
         .updating {
             animation: pulse 1s infinite;
         }
+        
+        .reduction-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+        
+        .reduction-bar {
+            flex: 1;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .reduction-fill {
+            height: 100%;
+            width: 70%;
+            background: linear-gradient(90deg, #ff6b6b, #ee5a24);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            transition: width 0.3s ease;
+        }
+        
+        .reduction-text {
+            min-width: 50px;
+            text-align: right;
+            color: #ff6b6b;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -205,6 +242,15 @@
                 <div class="metric">
                     <span class="metric-label">Saver Balance:</span>
                     <span class="metric-value" id="balance">$0.00</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Reduction Ratio:</span>
+                    <div class="reduction-container">
+                        <div class="reduction-bar">
+                            <div class="reduction-fill" id="reductionFill">70%</div>
+                        </div>
+                        <span class="metric-value reduction-text">70.0%</span>
+                    </div>
                 </div>
             </div>
             
