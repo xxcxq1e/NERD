@@ -16,64 +16,64 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 6px;
+            padding: 2px;
         }
         
         .container {
-            max-width: 360px;
+            max-width: 280px;
             margin: 0 auto;
         }
         
         .header {
             text-align: center;
             color: white;
-            margin-bottom: 9px;
+            margin-bottom: 4px;
         }
         
         .header h1 {
-            font-size: 0.75em;
-            margin-bottom: 3px;
+            font-size: 0.6em;
+            margin-bottom: 1px;
         }
         
         .header p {
-            font-size: 0.36em;
+            font-size: 0.25em;
             opacity: 0.9;
         }
         
         .dashboard {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-            gap: 6px;
-            margin-bottom: 9px;
+            grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+            gap: 3px;
+            margin-bottom: 4px;
         }
         
         .card {
             background: white;
-            border-radius: 4.5px;
-            padding: 7.5px;
-            box-shadow: 0 3px 9px rgba(0,0,0,0.1);
+            border-radius: 3px;
+            padding: 4px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
             transition: transform 0.3s ease;
         }
         
         .card:hover {
-            transform: translateY(-1.5px);
+            transform: translateY(-1px);
         }
         
         .card h3 {
             color: #333;
-            margin-bottom: 4.5px;
-            font-size: 0.39em;
-            border-bottom: 0.6px solid #667eea;
-            padding-bottom: 3px;
+            margin-bottom: 2px;
+            font-size: 0.28em;
+            border-bottom: 0.4px solid #667eea;
+            padding-bottom: 1px;
         }
         
         .status {
-            font-size: 0.45em;
+            font-size: 0.32em;
             font-weight: bold;
-            padding: 3px 6px;
-            border-radius: 7.5px;
+            padding: 2px 4px;
+            border-radius: 4px;
             text-align: center;
-            margin: 3px 0;
+            margin: 2px 0;
         }
         
         .status.running {
@@ -95,8 +95,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 3px 0;
-            border-bottom: 0.3px solid #eee;
+            padding: 1px 0;
+            border-bottom: 0.2px solid #eee;
         }
         
         .metric:last-child {
@@ -106,35 +106,35 @@
         .metric-label {
             color: #666;
             font-weight: 500;
-            font-size: 0.3em;
+            font-size: 0.22em;
         }
         
         .metric-value {
             color: #333;
             font-weight: bold;
-            font-size: 0.33em;
+            font-size: 0.24em;
         }
         
         .controls {
             text-align: center;
-            margin-top: 6px;
+            margin-top: 3px;
         }
         
         .btn {
             background: linear-gradient(45deg, #667eea, #764ba2);
             color: white;
             border: none;
-            padding: 4.5px 9px;
-            margin: 0 3px;
-            border-radius: 7.5px;
-            font-size: 0.33em;
+            padding: 3px 6px;
+            margin: 0 2px;
+            border-radius: 4px;
+            font-size: 0.24em;
             cursor: pointer;
             transition: all 0.3s ease;
         }
         
         .btn:hover {
-            transform: translateY(-0.6px);
-            box-shadow: 0 1.5px 4.5px rgba(0,0,0,0.2);
+            transform: translateY(-0.4px);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
         }
         
         .btn.stop {
@@ -144,17 +144,17 @@
         .activity-log {
             background: #1a1a1a;
             color: #00ff00;
-            border-radius: 3px;
-            padding: 6px;
+            border-radius: 2px;
+            padding: 3px;
             font-family: 'Courier New', monospace;
-            max-height: 90px;
+            max-height: 60px;
             overflow-y: auto;
-            margin-top: 6px;
-            font-size: 0.3em;
+            margin-top: 3px;
+            font-size: 0.22em;
         }
         
         .log-entry {
-            margin-bottom: 1.5px;
+            margin-bottom: 1px;
             opacity: 0.8;
         }
         
