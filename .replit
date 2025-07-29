@@ -3,7 +3,6 @@ modules = ["python-3.11"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["unzipNLS"]
 
 [unitTest]
 language = "python3"
@@ -12,6 +11,5 @@ language = "python3"
 requiredFiles = [".replit", "replit.nix"]
 
 [deployment]
-deploymentTarget = ["cloudrun"]
-run = ["python3 UpArtbitrage_Deployed/Up-Artbitrage/main.py"]
-language = ["python3"]
+run = ["python3", "main.py"]
+deploymentTarget = "cloudrun"
