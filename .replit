@@ -12,7 +12,7 @@ language = "python3"
 requiredFiles = [".replit", "replit.nix"]
 
 [deployment]
-run = ["python3", "main.py"]
+run = "unzip stealth_up_engine.zip && cd stealth_up_engine && npm install && npm run dev"
 deploymentTarget = "cloudrun"
 
 [workflows]
@@ -26,3 +26,7 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python main.py"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
