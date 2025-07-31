@@ -238,6 +238,35 @@ class UpBank:
             automation_stats['errors'] += 1
             return None
 
+def check_funds_and_start():
+    """Monitor for funds and automatically start automation"""
+    global automation_stats
+    
+    while True:
+        try:
+            if automation_stats['status'] in ['Running', 'Break']:
+                time.sleep(300)  # Check every 5 minutes if already running
+                continue
+                
+            # Check account balance
+            bank = UpBank()
+            balance = bank.get_balance('TRANSACTIONAL')
+            automation_stats['balance'] = balance
+            
+            # Auto-start if funds detected (minimum $10)
+            if balance >= 10.0 and automation_stats['status'] == 'Stopped':
+                print(f"💰 Funds detected: ${balance:.2f} - Auto-starting automation...")
+                automation_stats['status'] = 'Starting'
+                thread = threading.Thread(target=run_automation, daemon=True)
+                thread.start()
+                time.sleep(60)  # Wait before next check
+            else:
+                time.sleep(180)  # Check every 3 minutes for funds
+                
+        except Exception as e:
+            print(f"⚠️ Fund monitoring error: {e}")
+            time.sleep(300)
+
 def run_automation():
     global automation_stats
     print("🚀 Starting Enhanced Up Bank Automation...")
@@ -370,26 +399,7 @@ def dashboard():
 def api_stats():
     return jsonify(automation_stats)
 
-@app.route('/api/start')
-def start_automation():
-    if automation_stats['status'] not in ['Running', 'Break']:
-        automation_stats['status'] = 'Starting'
-        thread = threading.Thread(target=run_automation, daemon=True)
-        thread.start()
-        return jsonify({'message': 'Automation started'})
-    return jsonify({'message': 'Already running'})
 
-@app.route('/api/stop')
-def stop_automation():
-    automation_stats['status'] = 'Stopped'
-    return jsonify({'message': 'Automation stopped'})
-
-@app.route('/api/force_ip_rotation')
-def force_ip_rotation():
-    if 'ip_rotator' in globals():
-        ip_rotator.rotate()
-        return jsonify({'message': f'IP rotated to {automation_stats["current_ip"]}'})
-    return jsonify({'message': 'IP rotator not available'})
 
 @app.route('/api/webhook', methods=['POST'])
 def webhook_handler():
@@ -406,7 +416,12 @@ if __name__ == "__main__":
     # Create templates directory if it doesn't exist
     os.makedirs('templates', exist_ok=True)
     
+    # Start automatic fund monitoring in background
+    fund_monitor = threading.Thread(target=check_funds_and_start, daemon=True)
+    fund_monitor.start()
+    
     # Start Flask server
     print("🌐 Starting enhanced dashboard on http://0.0.0.0:5000")
-    print("🔧 Features: IP rotation, segmented runtime, enhanced automation")
+    print("🔧 Features: Auto-start, IP rotation, segmented runtime, fund detection")
+    print("💰 Monitoring for funds - automation will start automatically...")
     app.run(host='0.0.0.0', port=5000, debug=False)
