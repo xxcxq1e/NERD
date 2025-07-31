@@ -42,7 +42,7 @@ automation_stats = {
     'segment_end': None,
     'next_resume': None,
     'segment_count': 0,
-    'daily_target': 200.0,
+    'daily_target': 280.0,
     'monthly_target': 6000.0,
     'daily_progress': 0.0,
     'monthly_progress': 0.0,
