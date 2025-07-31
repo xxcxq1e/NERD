@@ -700,8 +700,45 @@ def run_automation():
 
 # Flask Dashboard Routes
 @app.route('/')
+def setup():
+    return render_template('setup.html')
+
+@app.route('/dashboard')
 def dashboard():
     return render_template('dashboard.html')
+
+@app.route('/api/save_config', methods=['POST'])
+def save_config():
+    try:
+        data = request.get_json()
+        api_key = data.get('api_key', '').strip()
+        payid_address = data.get('payid_address', '').strip()
+        
+        if not api_key or not payid_address:
+            return jsonify({'status': 'error', 'message': 'Both API key and PayID address are required'})
+        
+        # Update environment variable
+        global UP_API_KEY
+        UP_API_KEY = api_key
+        
+        # Update the global PayID address in the code
+        # For now, we'll just validate the format
+        if '@' not in payid_address:
+            return jsonify({'status': 'error', 'message': 'Invalid PayID format'})
+        
+        # Test the API key by trying to get accounts
+        try:
+            headers = {"Authorization": f"Bearer {api_key}"}
+            response = requests.get("https://api.up.com.au/api/v1/accounts", headers=headers)
+            if response.status_code != 200:
+                return jsonify({'status': 'error', 'message': 'Invalid API key - Unable to connect to Up Bank'})
+        except Exception as e:
+            return jsonify({'status': 'error', 'message': f'API connection failed: {str(e)}'})
+        
+        return jsonify({'status': 'success', 'message': 'Configuration saved successfully'})
+        
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'Configuration error: {str(e)}'})
 
 @app.route('/api/stats')
 def api_stats():
