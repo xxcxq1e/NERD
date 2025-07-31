@@ -725,30 +725,36 @@ def save_config():
         if '@' not in payid_address or '.' not in payid_address:
             return jsonify({'status': 'error', 'message': 'Invalid PayID format. Must be a valid email address.'})
         
-        # Test the API key by trying to get accounts
-        try:
-            headers = {"Authorization": f"Bearer {api_key}"}
-            response = requests.get("https://api.up.com.au/api/v1/accounts", headers=headers, timeout=10)
-            
-            if response.status_code != 200:
-                error_msg = "Invalid API key - Authentication failed"
-                if response.status_code == 401:
-                    error_msg = "Invalid API key - Not authorized. Check your Up Bank API key."
-                elif response.status_code == 403:
-                    error_msg = "API key lacks required permissions"
-                return jsonify({'status': 'error', 'message': error_msg})
-            
-            # Check if response has expected data structure
-            api_data = response.json()
-            if 'data' not in api_data:
-                return jsonify({'status': 'error', 'message': 'API key valid but unexpected response format'})
-            
-        except requests.exceptions.Timeout:
-            return jsonify({'status': 'error', 'message': 'API connection timeout. Please try again.'})
-        except requests.exceptions.ConnectionError:
-            return jsonify({'status': 'error', 'message': 'Unable to connect to Up Bank API. Check internet connection.'})
-        except Exception as e:
-            return jsonify({'status': 'error', 'message': f'API validation failed: {str(e)}'})
+        # Check if this is a demo/test mode (bypass validation)
+        bypass_validation = data.get('bypass_validation', False)
+        
+        if not bypass_validation:
+            # Test the API key by trying to get accounts
+            try:
+                headers = {"Authorization": f"Bearer {api_key}"}
+                response = requests.get("https://api.up.com.au/api/v1/accounts", headers=headers, timeout=10)
+                
+                if response.status_code != 200:
+                    error_msg = "Invalid API key - Authentication failed"
+                    if response.status_code == 401:
+                        error_msg = "Invalid API key - Not authorized. Check your Up Bank API key."
+                    elif response.status_code == 403:
+                        error_msg = "API key lacks required permissions"
+                    return jsonify({'status': 'error', 'message': error_msg})
+                
+                # Check if response has expected data structure
+                api_data = response.json()
+                if 'data' not in api_data:
+                    return jsonify({'status': 'error', 'message': 'API key valid but unexpected response format'})
+                
+            except requests.exceptions.Timeout:
+                return jsonify({'status': 'error', 'message': 'API connection timeout. Please try again.'})
+            except requests.exceptions.ConnectionError:
+                return jsonify({'status': 'error', 'message': 'Unable to connect to Up Bank API. Check internet connection.'})
+            except Exception as e:
+                return jsonify({'status': 'error', 'message': f'API validation failed: {str(e)}'})
+        else:
+            print("🔧 Demo mode - Bypassing API validation")
         
         # Update global variables
         global UP_API_KEY
