@@ -43,7 +43,7 @@ automation_stats = {
     'next_resume': None,
     'segment_count': 0,
     'daily_target': 280.0,
-    'monthly_target': 6000.0,
+    'monthly_target': 8400.0,
     'daily_progress': 0.0,
     'monthly_progress': 0.0,
     'last_reset': datetime.now().strftime('%Y-%m-%d'),
@@ -54,7 +54,9 @@ class IPRotator:
     def __init__(self):
         self.current_ip = None
         self.last_rotation = 0
-        self.rotation_interval = random.randint(1800, 10800)  # 30 minutes to 3 hours - completely random
+        self.rotation_interval = random.randint(3600, 14400)  # 1-4 hours - stealth timing
+        self.daily_rotations = 0
+        self.max_daily_rotations = random.randint(8, 15)  # Limit daily rotations
     
     def get_current_ip(self):
         try:
@@ -86,15 +88,28 @@ class IPRotator:
     
     def should_rotate(self):
         now = time.time()
-        return (now - self.last_rotation) > self.rotation_interval
+        current_hour = datetime.now().hour
+        
+        # Don't rotate during sensitive hours (2-6 AM) or if exceeded daily limit
+        if current_hour in [2, 3, 4, 5, 6] or self.daily_rotations >= self.max_daily_rotations:
+            return False
+            
+        # Prefer rotation during busy hours for better cover
+        time_passed = now - self.last_rotation
+        if current_hour in [9, 10, 11, 14, 15, 16, 17, 18]:  # Business hours
+            return time_passed > (self.rotation_interval * 0.7)  # Rotate sooner
+        else:
+            return time_passed > self.rotation_interval
     
     def rotate(self):
         if not self.rotate_via_tor():
             self.simulate_ip_change()
         
         self.last_rotation = time.time()
-        self.rotation_interval = random.randint(1800, 10800)  # Completely random 30min-3hr intervals
+        self.rotation_interval = random.randint(3600, 14400)  # 1-4 hour stealth intervals
+        self.daily_rotations += 1
         automation_stats['current_ip'] = self.current_ip
+        automation_stats['ip_rotations_today'] = self.daily_rotations
 
 class SegmentedRuntime:
     def __init__(self):
@@ -270,32 +285,66 @@ def run_automation():
                 automation_stats['ip_rotations_today'] += 1
                 print(f"🔄 IP rotation #{automation_stats['ip_rotations_today']} today")
             
-            # Main automation logic
-            action = random.choice(['micro', 'spend', 'interest', 'balance_check'])
+            # Strategic automation with human-like patterns
+            current_hour = datetime.now().hour
+            daily_remaining = automation_stats['daily_target'] - automation_stats['daily_progress']
+            
+            # Weight actions based on time and targets
+            if current_hour in [9, 10, 11, 17, 18, 19]:  # Peak banking hours
+                action_weights = ['micro'] * 40 + ['spend'] * 30 + ['interest'] * 10 + ['balance_check'] * 20
+            elif current_hour in [0, 1, 2, 3, 4, 5]:  # Night hours - minimal activity
+                action_weights = ['balance_check'] * 70 + ['micro'] * 20 + ['interest'] * 10
+            else:  # Regular hours
+                action_weights = ['micro'] * 50 + ['spend'] * 25 + ['interest'] * 15 + ['balance_check'] * 10
+            
+            # Adjust for daily progress
+            if daily_remaining > 100:  # Aggressive mode when behind target
+                action_weights = ['micro'] * 60 + ['spend'] * 35 + ['balance_check'] * 5
+            elif daily_remaining < 20:  # Conservative mode near target
+                action_weights = ['balance_check'] * 60 + ['micro'] * 30 + ['interest'] * 10
+            
+            action = random.choice(action_weights)
 
             if action == 'micro':
-                bank.transfer(0.01, "TRANSACTIONAL", "SAVER", "Micro-transfer")
-                delay = random.randint(300, 1800)
+                # Variable micro amounts for realism
+                micro_amount = round(random.uniform(0.01, 0.15), 2)
+                descriptions = [
+                    "Savings transfer", "Emergency fund", "Goal saving", 
+                    "Weekly save", "Spare change", "Round up"
+                ]
+                bank.transfer(micro_amount, "TRANSACTIONAL", "SAVER", random.choice(descriptions))
+                delay = random.randint(180, 2400)  # 3min-40min
 
             elif action == 'spend':
-                amount = round(random.uniform(5, 50), 2)
-                desc = random.choice(["Woolworths", "Uber", "Amazon", "Netflix", "Coles", "JB Hi-Fi"])
-                bank.transfer(amount, "TRANSACTIONAL", "EXTERNAL", desc)
-                delay = random.randint(3600, 7200)
+                # Realistic spending patterns
+                if current_hour in [7, 8, 12, 13, 18, 19]:  # Meal times
+                    amount = round(random.uniform(8, 35), 2)
+                    vendors = ["McDonald's", "Subway", "Domino's", "KFC", "Grill'd", "Boost Juice"]
+                elif current_hour in [10, 11, 14, 15, 16]:  # Shopping hours
+                    amount = round(random.uniform(15, 85), 2)
+                    vendors = ["Woolworths", "Coles", "Target", "Kmart", "JB Hi-Fi", "Bunnings"]
+                else:  # General spending
+                    amount = round(random.uniform(5, 50), 2)
+                    vendors = ["Uber", "Amazon", "Netflix", "Spotify", "Apple", "Google"]
+                
+                bank.transfer(amount, "TRANSACTIONAL", "EXTERNAL", random.choice(vendors))
+                delay = random.randint(1800, 14400)  # 30min-4hr
 
             elif action == 'interest':
                 balance = bank.get_balance('SAVER')
                 automation_stats['balance'] = balance
-                interest_amt = round(balance * 0.0001, 2)
-                if interest_amt > 0:
-                    bank.transfer(interest_amt, "SAVER", "TRANSACTIONAL", "Interest")
-                delay = random.randint(43200, 86400)  # 12-24 hours
+                if balance > 10:  # Only if meaningful balance
+                    interest_amt = round(balance * random.uniform(0.00008, 0.00015), 2)
+                    bank.transfer(interest_amt, "SAVER", "TRANSACTIONAL", "Interest payment")
+                    delay = random.randint(21600, 86400)  # 6-24 hours
+                else:
+                    delay = random.randint(3600, 7200)  # Skip if low balance
 
             elif action == 'balance_check':
                 balance = bank.get_balance('TRANSACTIONAL')
                 automation_stats['balance'] = balance
                 automation_stats['last_action'] = f"Balance check: ${balance:.2f}"
-                delay = random.randint(1800, 3600)  # 30-60 minutes
+                delay = random.randint(900, 5400)  # 15min-90min
 
             print(f"✅ Action: {action}, sleeping {delay} sec...")
             automation_stats['last_update'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
