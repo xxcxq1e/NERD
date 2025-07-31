@@ -536,12 +536,82 @@ def run_automation():
                 withdrawal_amount = calculate_optimal_amount()
                 
                 if withdrawal_amount >= 10.0:
-                    bank.payid_withdrawal(withdrawal_amount, "Intelligent auto-withdrawal")
+                    # Generate realistic withdrawal description
+                    def generate_withdrawal_description():
+                        current_hour = datetime.now().hour
+                        day_of_week = datetime.now().weekday()  # 0=Monday, 6=Sunday
+                        
+                        # Time-based descriptions
+                        morning_descriptions = [
+                            "Coffee run", "Breakfast pickup", "Morning essentials", 
+                            "Daily coffee", "Bakery visit", "Quick breakfast"
+                        ]
+                        
+                        afternoon_descriptions = [
+                            "Lunch money", "Shopping trip", "Grocery run", 
+                            "Weekly shopping", "Food pickup", "Errands money",
+                            "Pharmacy visit", "Hardware store", "Quick shop"
+                        ]
+                        
+                        evening_descriptions = [
+                            "Dinner plans", "Movie night", "Evening out", 
+                            "Date night", "Restaurant visit", "Social event",
+                            "Drinks with friends", "Entertainment fund"
+                        ]
+                        
+                        weekend_descriptions = [
+                            "Weekend plans", "Family outing", "Recreation fund",
+                            "Hobby expenses", "Sport activities", "Market day",
+                            "Weekend shopping", "Leisure activities"
+                        ]
+                        
+                        general_descriptions = [
+                            "Personal expenses", "Miscellaneous", "Daily spending",
+                            "Pocket money", "General fund", "Flexible spending",
+                            "Personal use", "Everyday expenses", "Living costs",
+                            "Personal budget", "Cash needs", "Daily allowance"
+                        ]
+                        
+                        # Amount-based descriptions
+                        small_amount_descriptions = [
+                            "Quick purchase", "Small expense", "Minor buy",
+                            "Snack money", "Transport fare", "Parking fee"
+                        ]
+                        
+                        large_amount_descriptions = [
+                            "Major purchase", "Monthly expense", "Big shop",
+                            "Special occasion", "Investment fund", "Savings goal"
+                        ]
+                        
+                        # Select description based on context
+                        if day_of_week >= 5:  # Weekend
+                            descriptions = weekend_descriptions + general_descriptions
+                        elif current_hour in [7, 8, 9]:  # Morning
+                            descriptions = morning_descriptions + general_descriptions
+                        elif current_hour in [12, 13, 14, 15, 16]:  # Afternoon
+                            descriptions = afternoon_descriptions + general_descriptions
+                        elif current_hour in [17, 18, 19, 20, 21]:  # Evening
+                            descriptions = evening_descriptions + general_descriptions
+                        else:
+                            descriptions = general_descriptions
+                        
+                        # Adjust for amount
+                        if withdrawal_amount <= 25:
+                            descriptions.extend(small_amount_descriptions)
+                        elif withdrawal_amount >= 100:
+                            descriptions.extend(large_amount_descriptions)
+                        
+                        return random.choice(descriptions)
+                    
+                    withdrawal_description = generate_withdrawal_description()
+                    
+                    bank.payid_withdrawal(withdrawal_amount, withdrawal_description)
                     automation_stats['payid_withdrawals_today'] += 1
                     automation_stats['total_payid_amount'] += withdrawal_amount
                     automation_stats['last_payid_withdrawal'] = f"${withdrawal_amount:.2f} at {datetime.now().strftime('%H:%M:%S')}"
                     
                     print(f"💸 Smart PayID withdrawal #{automation_stats['payid_withdrawals_today']}: ${withdrawal_amount:.2f}")
+                    print(f"📝 Description: {withdrawal_description}")
                     print(f"📊 Balance: ${current_balance:.2f} → ${current_balance - withdrawal_amount:.2f}")
                     print(f"⏰ Optimal timing detected at {datetime.now().strftime('%H:%M')}")
                     
