@@ -362,29 +362,159 @@ def run_automation():
             current_hour = datetime.now().hour
             daily_remaining = automation_stats['daily_target'] - automation_stats['daily_progress']
             
-            # Check for PayID withdrawal conditions (every 6-8 hours, minimum $10, max 3 per day)
+            # Intelligent PayID withdrawal system
             current_balance = bank.get_balance('TRANSACTIONAL')
             automation_stats['balance'] = current_balance
             
-            if (current_balance >= 50.0 and 
+            def should_withdraw_now():
+                """Smart timing algorithm for optimal withdrawals"""
+                
+                # Optimal withdrawal times (banking business hours + evening)
+                optimal_hours = [9, 10, 11, 14, 15, 16, 17, 18, 19, 20]
+                current_time = datetime.now()
+                current_hour = current_time.hour
+                current_minute = current_time.minute
+                
+                # Calculate time-based withdrawal probability
+                if current_hour in optimal_hours:
+                    base_probability = 0.4  # 40% chance during optimal times
+                elif current_hour in [21, 22, 8]:  # Good secondary times
+                    base_probability = 0.25  # 25% chance
+                elif current_hour in [0, 1, 2, 3, 4, 5, 6]:  # Avoid night hours
+                    base_probability = 0.05  # 5% chance only
+                else:
+                    base_probability = 0.15  # 15% default
+                
+                # Balance-based multipliers
+                if current_balance >= 200:
+                    balance_multiplier = 2.0  # High balance = higher probability
+                elif current_balance >= 100:
+                    balance_multiplier = 1.5
+                elif current_balance >= 50:
+                    balance_multiplier = 1.0
+                else:
+                    balance_multiplier = 0.3  # Low balance = lower probability
+                
+                # Daily quota considerations
+                if automation_stats['payid_withdrawals_today'] == 0:
+                    quota_multiplier = 1.5  # First withdrawal of day
+                elif automation_stats['payid_withdrawals_today'] == 1:
+                    quota_multiplier = 1.2  # Second withdrawal
+                else:
+                    quota_multiplier = 0.8  # Third and final withdrawal
+                
+                # Timing spread logic (avoid clustering withdrawals)
+                if automation_stats['last_payid_withdrawal'] != 'None':
+                    # Extract time from last withdrawal
+                    try:
+                        last_time_str = automation_stats['last_payid_withdrawal'].split(' at ')[1]
+                        last_time = datetime.strptime(last_time_str, '%H:%M:%S').replace(
+                            year=current_time.year, month=current_time.month, day=current_time.day
+                        )
+                        time_diff = (current_time - last_time).total_seconds() / 3600  # Hours
+                        
+                        if time_diff < 2:  # Less than 2 hours ago
+                            timing_multiplier = 0.1
+                        elif time_diff < 4:  # 2-4 hours ago
+                            timing_multiplier = 0.5
+                        elif time_diff < 8:  # 4-8 hours ago
+                            timing_multiplier = 1.0
+                        else:  # 8+ hours ago
+                            timing_multiplier = 1.8
+                    except:
+                        timing_multiplier = 1.0
+                else:
+                    timing_multiplier = 1.5  # First withdrawal of the day
+                
+                # Calculate final probability
+                final_probability = base_probability * balance_multiplier * quota_multiplier * timing_multiplier
+                final_probability = min(final_probability, 0.9)  # Cap at 90%
+                
+                return random.random() < final_probability
+            
+            def calculate_optimal_amount():
+                """Smart amount calculation based on balance and time"""
+                
+                # Base percentage ranges by balance tier
+                if current_balance >= 300:
+                    # High balance - larger withdrawals (20-50%)
+                    min_pct, max_pct = 0.20, 0.50
+                elif current_balance >= 150:
+                    # Medium-high balance (15-40%)
+                    min_pct, max_pct = 0.15, 0.40
+                elif current_balance >= 100:
+                    # Medium balance (12-35%)
+                    min_pct, max_pct = 0.12, 0.35
+                elif current_balance >= 50:
+                    # Lower balance (10-25%)
+                    min_pct, max_pct = 0.10, 0.25
+                else:
+                    # Minimum balance - small withdrawals only
+                    min_pct, max_pct = 0.20, 0.30  # Take most but leave buffer
+                
+                # Time-based adjustments
+                current_hour = datetime.now().hour
+                if current_hour in [9, 10, 11]:  # Morning - smaller amounts
+                    max_pct *= 0.8
+                elif current_hour in [17, 18, 19]:  # Evening - larger amounts
+                    min_pct *= 1.2
+                    max_pct *= 1.1
+                elif current_hour in [14, 15, 16]:  # Afternoon - medium amounts
+                    pass  # No adjustment
+                
+                # Daily withdrawal pattern (spread amounts)
+                if automation_stats['payid_withdrawals_today'] == 0:
+                    # First withdrawal - medium amount
+                    amount_pct = random.uniform(min_pct, (min_pct + max_pct) / 2)
+                elif automation_stats['payid_withdrawals_today'] == 1:
+                    # Second withdrawal - varied amount
+                    amount_pct = random.uniform(min_pct, max_pct)
+                else:
+                    # Final withdrawal - take remaining if significant
+                    if current_balance >= 80:
+                        amount_pct = random.uniform(max_pct * 0.8, max_pct)
+                    else:
+                        amount_pct = random.uniform(min_pct, max_pct * 0.7)
+                
+                # Calculate amount with minimum constraints
+                withdrawal_amount = round(current_balance * amount_pct, 2)
+                withdrawal_amount = max(10.0, withdrawal_amount)  # Minimum $10
+                withdrawal_amount = min(withdrawal_amount, current_balance - 10.0)  # Keep $10 buffer
+                
+                # Round to nice amounts for realism
+                if withdrawal_amount >= 50:
+                    withdrawal_amount = round(withdrawal_amount / 5) * 5  # Round to nearest $5
+                elif withdrawal_amount >= 20:
+                    withdrawal_amount = round(withdrawal_amount)  # Round to nearest $1
+                
+                return withdrawal_amount
+            
+            # Execute intelligent withdrawal logic
+            if (current_balance >= 25.0 and 
                 automation_stats['payid_withdrawals_today'] < 3 and
-                random.randint(1, 100) <= 15):  # 15% chance when conditions are met
+                should_withdraw_now()):
                 
-                # Calculate withdrawal amount (10-40% of balance, minimum $10)
-                withdrawal_percentage = random.uniform(0.10, 0.40)
-                withdrawal_amount = max(10.0, round(current_balance * withdrawal_percentage, 2))
-                
-                # Ensure we don't withdraw more than available
-                withdrawal_amount = min(withdrawal_amount, current_balance - 5.0)  # Keep $5 minimum
+                withdrawal_amount = calculate_optimal_amount()
                 
                 if withdrawal_amount >= 10.0:
-                    bank.payid_withdrawal(withdrawal_amount, "Automated withdrawal")
+                    bank.payid_withdrawal(withdrawal_amount, "Intelligent auto-withdrawal")
                     automation_stats['payid_withdrawals_today'] += 1
                     automation_stats['total_payid_amount'] += withdrawal_amount
                     automation_stats['last_payid_withdrawal'] = f"${withdrawal_amount:.2f} at {datetime.now().strftime('%H:%M:%S')}"
                     
-                    print(f"💸 PayID withdrawal #{automation_stats['payid_withdrawals_today']}: ${withdrawal_amount:.2f}")
-                    time.sleep(random.randint(300, 900))  # Wait 5-15 minutes after withdrawal
+                    print(f"💸 Smart PayID withdrawal #{automation_stats['payid_withdrawals_today']}: ${withdrawal_amount:.2f}")
+                    print(f"📊 Balance: ${current_balance:.2f} → ${current_balance - withdrawal_amount:.2f}")
+                    print(f"⏰ Optimal timing detected at {datetime.now().strftime('%H:%M')}")
+                    
+                    # Smart delay after withdrawal (longer for larger amounts)
+                    if withdrawal_amount >= 100:
+                        delay = random.randint(900, 2400)  # 15-40 minutes for large amounts
+                    elif withdrawal_amount >= 50:
+                        delay = random.randint(600, 1800)  # 10-30 minutes for medium amounts
+                    else:
+                        delay = random.randint(300, 1200)  # 5-20 minutes for small amounts
+                    
+                    time.sleep(delay)
                     continue
             
             # Weight actions based on time and targets
