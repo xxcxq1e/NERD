@@ -717,25 +717,55 @@ def save_config():
         if not api_key or not payid_address:
             return jsonify({'status': 'error', 'message': 'Both API key and PayID address are required'})
         
-        # Update environment variable
-        global UP_API_KEY
-        UP_API_KEY = api_key
+        # Validate API key format (Up Bank keys start with 'up:yeah:')
+        if not api_key.startswith('up:yeah:'):
+            return jsonify({'status': 'error', 'message': 'Invalid API key format. Up Bank keys start with "up:yeah:"'})
         
-        # Update the global PayID address in the code
-        # For now, we'll just validate the format
-        if '@' not in payid_address:
-            return jsonify({'status': 'error', 'message': 'Invalid PayID format'})
+        # Validate PayID format
+        if '@' not in payid_address or '.' not in payid_address:
+            return jsonify({'status': 'error', 'message': 'Invalid PayID format. Must be a valid email address.'})
         
         # Test the API key by trying to get accounts
         try:
             headers = {"Authorization": f"Bearer {api_key}"}
-            response = requests.get("https://api.up.com.au/api/v1/accounts", headers=headers)
+            response = requests.get("https://api.up.com.au/api/v1/accounts", headers=headers, timeout=10)
+            
             if response.status_code != 200:
-                return jsonify({'status': 'error', 'message': 'Invalid API key - Unable to connect to Up Bank'})
+                error_msg = "Invalid API key - Authentication failed"
+                if response.status_code == 401:
+                    error_msg = "Invalid API key - Not authorized. Check your Up Bank API key."
+                elif response.status_code == 403:
+                    error_msg = "API key lacks required permissions"
+                return jsonify({'status': 'error', 'message': error_msg})
+            
+            # Check if response has expected data structure
+            api_data = response.json()
+            if 'data' not in api_data:
+                return jsonify({'status': 'error', 'message': 'API key valid but unexpected response format'})
+            
+        except requests.exceptions.Timeout:
+            return jsonify({'status': 'error', 'message': 'API connection timeout. Please try again.'})
+        except requests.exceptions.ConnectionError:
+            return jsonify({'status': 'error', 'message': 'Unable to connect to Up Bank API. Check internet connection.'})
         except Exception as e:
-            return jsonify({'status': 'error', 'message': f'API connection failed: {str(e)}'})
+            return jsonify({'status': 'error', 'message': f'API validation failed: {str(e)}'})
         
-        return jsonify({'status': 'success', 'message': 'Configuration saved successfully'})
+        # Update global variables
+        global UP_API_KEY
+        UP_API_KEY = api_key
+        
+        # Save to environment (for persistence across restarts)
+        os.environ['UP_API_KEY'] = api_key
+        os.environ['PAYID_ADDRESS'] = payid_address
+        
+        # Update automation stats
+        automation_stats['last_action'] = 'Configuration updated successfully'
+        automation_stats['last_update'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        print(f"✅ Configuration saved - API key: {api_key[:15]}...")
+        print(f"✅ PayID address: {payid_address}")
+        
+        return jsonify({'status': 'success', 'message': 'Configuration saved and validated successfully!'})
         
     except Exception as e:
         return jsonify({'status': 'error', 'message': f'Configuration error: {str(e)}'})
