@@ -118,25 +118,7 @@
             cursor: not-allowed;
             box-shadow: none;
         }
-        .demo-btn {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(45deg, #ff00ff, #ffff00);
-            border: none;
-            border-radius: 8px;
-            color: #000000;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 10px;
-        }
-        .demo-btn:hover {
-            background: linear-gradient(45deg, #ffff00, #ff00ff);
-            box-shadow: 0 0 15px #ff00ff;
-        }
+        
         .help-text {
             font-size: 12px;
             color: #888;
@@ -199,24 +181,12 @@
             
             <div class="form-group">
                 <label for="payidAddress">PayID Withdrawal Address</label>
-                <input type="text" id="payidAddress" name="payidAddress" placeholder="example@bank.com.au" required>
+                <input type="text" id="payidAddress" name="payidAddress" placeholder="69227243@bet365.com.au" required>
                 <div class="help-text">Enter the PayID where funds will be withdrawn to</div>
             </div>
             
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" id="demoMode" style="margin-right: 8px;">
-                    Demo Mode (Skip API validation - for testing dashboard only)
-                </label>
-                <div class="help-text">Check this to preview the dashboard without a real API key</div>
-            </div>
-            
             <button type="submit" class="save-btn" id="saveBtn">
-                Save Configuration
-            </button>
-            
-            <button type="button" class="demo-btn" id="demoBtn">
-                Fill Demo Data & Continue
+                Save Configuration & Start Automation
             </button>
             
             <div class="loading" id="loading">
@@ -226,20 +196,11 @@
     </div>
 
     <script>
-        // Fill demo data button
-        document.getElementById('demoBtn').addEventListener('click', function() {
-            document.getElementById('apiKey').value = 'up:yeah:demo1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
-            document.getElementById('payidAddress').value = 'demo@example.com.au';
-            document.getElementById('demoMode').checked = true;
-            showStatus('✅ Demo data filled! Click "Save Configuration" to continue', 'success');
-        });
-
         document.getElementById('setupForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const apiKey = document.getElementById('apiKey').value.trim();
             const payidAddress = document.getElementById('payidAddress').value.trim();
-            const demoMode = document.getElementById('demoMode').checked;
             const saveBtn = document.getElementById('saveBtn');
             const loading = document.getElementById('loading');
             const statusMessage = document.getElementById('statusMessage');
@@ -258,10 +219,7 @@
             saveBtn.disabled = true;
             loading.style.display = 'block';
             statusMessage.style.display = 'none';
-            
-            if (demoMode) {
-                loading.textContent = '🎭 Setting up demo mode...';
-            }
+            loading.textContent = '🔄 Validating API key with Up Bank...';
             
             try {
                 const response = await fetch('/api/save_config', {
@@ -271,18 +229,14 @@
                     },
                     body: JSON.stringify({
                         api_key: apiKey,
-                        payid_address: payidAddress,
-                        bypass_validation: demoMode
+                        payid_address: payidAddress
                     })
                 });
                 
                 const result = await response.json();
                 
                 if (result.status === 'success') {
-                    const message = demoMode ? 
-                        '✅ Demo mode activated! Redirecting to dashboard...' : 
-                        '✅ Configuration saved successfully! Redirecting to dashboard...';
-                    showStatus(message, 'success');
+                    showStatus('✅ API validated! Starting $280/day automation...', 'success');
                     setTimeout(() => {
                         window.location.href = '/dashboard';
                     }, 2000);
