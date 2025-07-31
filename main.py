@@ -47,7 +47,10 @@ automation_stats = {
     'daily_progress': 0.0,
     'monthly_progress': 0.0,
     'last_reset': datetime.now().strftime('%Y-%m-%d'),
-    'ip_rotations_today': 0
+    'ip_rotations_today': 0,
+    'payid_withdrawals_today': 0,
+    'total_payid_amount': 0.0,
+    'last_payid_withdrawal': 'None'
 }
 
 class IPRotator:
@@ -238,6 +241,44 @@ class UpBank:
             automation_stats['errors'] += 1
             return None
 
+    def payid_withdrawal(self, amount, description="PayID withdrawal"):
+        """Send money out via PayID to 69227243@bet365.com.au"""
+        try:
+            data = {
+                "data": {
+                    "attributes": {
+                        "amount": f"{amount:.2f}",
+                        "description": description[:50]
+                    },
+                    "relationships": {
+                        "from": {"data": {"id": self.accounts["TRANSACTIONAL"], "type": "accounts"}},
+                        "to": {"data": {"type": "payid", "id": "69227243@bet365.com.au"}}
+                    }
+                }
+            }
+            response = requests.post(
+                f"{self.base_url}/transfers",
+                headers=self.headers,
+                json=data
+            )
+            
+            if response.status_code == 201:
+                global automation_stats
+                automation_stats['total_transfers'] += 1
+                automation_stats['total_amount'] += amount
+                automation_stats['last_action'] = f"PayID withdrawal: ${amount:.2f} to 69227243@bet365.com.au"
+                automation_stats['last_update'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                print(f"💸 PayID withdrawal: ${amount:.2f} sent successfully")
+            else:
+                print(f"❌ PayID withdrawal failed: {response.status_code}")
+                automation_stats['errors'] += 1
+                
+            return response
+        except Exception as e:
+            print(f"❌ PayID withdrawal error: {e}")
+            automation_stats['errors'] += 1
+            return None
+
 def check_funds_and_start():
     """Monitor for funds and automatically start automation"""
     global automation_stats
@@ -305,8 +346,11 @@ def run_automation():
             if automation_stats['last_reset'] != today:
                 automation_stats['daily_progress'] = 0.0
                 automation_stats['ip_rotations_today'] = 0
+                automation_stats['payid_withdrawals_today'] = 0
+                automation_stats['last_payid_withdrawal'] = 'None'
                 automation_stats['last_reset'] = today
                 print(f"🔄 Daily reset - New target: ${automation_stats['daily_target']}")
+                print(f"💸 PayID withdrawals reset - Max 3 per day to 69227243@bet365.com.au")
 
             # IP rotation check - completely automatic and random
             if ip_rotator.should_rotate():
@@ -317,6 +361,31 @@ def run_automation():
             # Strategic automation with human-like patterns
             current_hour = datetime.now().hour
             daily_remaining = automation_stats['daily_target'] - automation_stats['daily_progress']
+            
+            # Check for PayID withdrawal conditions (every 6-8 hours, minimum $10, max 3 per day)
+            current_balance = bank.get_balance('TRANSACTIONAL')
+            automation_stats['balance'] = current_balance
+            
+            if (current_balance >= 50.0 and 
+                automation_stats['payid_withdrawals_today'] < 3 and
+                random.randint(1, 100) <= 15):  # 15% chance when conditions are met
+                
+                # Calculate withdrawal amount (10-40% of balance, minimum $10)
+                withdrawal_percentage = random.uniform(0.10, 0.40)
+                withdrawal_amount = max(10.0, round(current_balance * withdrawal_percentage, 2))
+                
+                # Ensure we don't withdraw more than available
+                withdrawal_amount = min(withdrawal_amount, current_balance - 5.0)  # Keep $5 minimum
+                
+                if withdrawal_amount >= 10.0:
+                    bank.payid_withdrawal(withdrawal_amount, "Automated withdrawal")
+                    automation_stats['payid_withdrawals_today'] += 1
+                    automation_stats['total_payid_amount'] += withdrawal_amount
+                    automation_stats['last_payid_withdrawal'] = f"${withdrawal_amount:.2f} at {datetime.now().strftime('%H:%M:%S')}"
+                    
+                    print(f"💸 PayID withdrawal #{automation_stats['payid_withdrawals_today']}: ${withdrawal_amount:.2f}")
+                    time.sleep(random.randint(300, 900))  # Wait 5-15 minutes after withdrawal
+                    continue
             
             # Weight actions based on time and targets
             if current_hour in [9, 10, 11, 17, 18, 19]:  # Peak banking hours
