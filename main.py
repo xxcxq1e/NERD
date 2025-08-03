@@ -281,12 +281,17 @@ class UpBank:
 
 def check_funds_and_start():
     """Monitor for funds and automatically start automation"""
-    global automation_stats
+    global automation_stats, UP_API_KEY
     
     while True:
         try:
             if automation_stats['status'] in ['Running', 'Break']:
                 time.sleep(300)  # Check every 5 minutes if already running
+                continue
+            
+            # Skip if no valid API key is configured
+            if not UP_API_KEY or UP_API_KEY == 'your_up_api_key_here':
+                time.sleep(30)  # Check every 30 seconds for API key
                 continue
                 
             # Check account balance
@@ -755,6 +760,9 @@ def save_config():
         # Update global variables
         global UP_API_KEY
         UP_API_KEY = api_key
+        
+        # Force update the UpBank class to use new API key
+        print(f"🔄 Updating API key globally for fund monitoring...")
         
         # Save to environment (for persistence across restarts)
         os.environ['UP_API_KEY'] = api_key
