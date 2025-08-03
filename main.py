@@ -14,7 +14,7 @@ from stem.control import Controller
 from dotenv import load_dotenv
 
 load_dotenv()
-UP_API_KEY = os.getenv('UP_API_KEY', 'up:yeah:sandboxpRzNjvVLNb4FKCOgk3K1JsW8U3JdXE8QEL5nCj3pXR7c9BKzBwVEYTm06oj2ZhyI4GkJxQqnF9Z1L3gR1e2MNcfJWs7a8Bp4oUtRPrQs')
+UP_API_KEY = os.getenv('UP_API_KEY', 'up:yeah:NUscFvIpe9vfPd31CMehvDSOvN0iJAGxCEkICqYJXHPRaqWFm8wTNL529iVACxDQiZgOBydYDG0xCbOtXuzDhiEl2TsLAUUNm5wuKU0MMEq3aXciC7M1fm7XrItnx6GA')
 PAYID_ADDRESS = 't.slowiak@hotmail.com'
 
 # Enhanced configuration
@@ -325,72 +325,110 @@ class UpBank:
             return None
 
 def check_funds_and_start():
-    """Monitor for funds and automatically start automation"""
+    """Monitor for funds and automatically start automation - SYSTEMATIC CONTINUOUS OPERATION"""
     global automation_stats, UP_API_KEY
+    
+    print("🔥 SYSTEMATIC FUND MONITOR STARTED - CONTINUOUS OPERATION MODE")
+    retry_count = 0
+    max_retries = 5
 
     while True:
         try:
             if automation_stats['status'] in ['Running', 'Break']:
-                time.sleep(300)  # Check every 5 minutes if already running
+                time.sleep(60)  # Quick checks when running
                 continue
 
-            # Use the configured API key
-            current_api_key = os.getenv('UP_API_KEY', UP_API_KEY)
-            if not current_api_key or current_api_key == 'your_up_api_key_here':
-                time.sleep(30)  # Check every 30 seconds for API key
-                continue
-
-            # Check account balance
-            bank = UpBank()
-            balance = bank.get_balance('TRANSACTIONAL')
-            automation_stats['balance'] = balance
-
-            # Auto-start if funds detected (minimum $10)
-            if balance >= 10.0 and automation_stats['status'] == 'Stopped':
-                print(f"💰 Funds detected: ${balance:.2f} - Auto-starting automation...")
-                automation_stats['status'] = 'Starting'
-                thread = threading.Thread(target=run_automation, daemon=True)
-                thread.start()
-                time.sleep(60)  # Wait before next check
-            else:
-                time.sleep(180)  # Check every 3 minutes for funds
+            # Force start with any balance > $1 for systematic operation
+            try:
+                bank = UpBank()
+                balance = bank.get_balance('TRANSACTIONAL')
+                automation_stats['balance'] = balance
+                
+                print(f"💰 Balance check: ${balance:.2f}")
+                
+                # SYSTEMATIC AUTO-START: Start with any meaningful balance
+                if balance >= 1.0 and automation_stats['status'] in ['Stopped', 'Failed']:
+                    print(f"🚀 SYSTEMATIC START: ${balance:.2f} detected - Launching automation...")
+                    automation_stats['status'] = 'Starting'
+                    thread = threading.Thread(target=run_automation, daemon=True)
+                    thread.start()
+                    retry_count = 0  # Reset retry counter on successful start
+                    time.sleep(30)
+                else:
+                    time.sleep(120)  # Check every 2 minutes for funds
+                    
+            except Exception as api_error:
+                retry_count += 1
+                print(f"⚠️ API Error #{retry_count}: {api_error}")
+                
+                if retry_count >= max_retries:
+                    print(f"🔄 Max retries reached, forcing systematic restart...")
+                    automation_stats['status'] = 'Stopped'
+                    retry_count = 0
+                    time.sleep(60)
+                else:
+                    time.sleep(30)  # Quick retry
 
         except Exception as e:
-            print(f"⚠️ Fund monitoring error: {e}")
-            time.sleep(300)
+            print(f"⚠️ System error in fund monitor: {e}")
+            time.sleep(60)  # Continue systematic operation
 
 def run_automation():
     global automation_stats
-    print("🚀 Starting Enhanced Up Bank Automation...")
+    print("🔥 SYSTEMATIC UP BANK AUTOMATION ENGINE - CONTINUOUS OPERATION")
     automation_stats['status'] = 'Starting'
 
-    # Initialize components
+    # Initialize components with systematic redundancy
     ip_rotator = IPRotator()
     segment_runtime = SegmentedRuntime()
+    error_count = 0
+    max_errors = 10
 
-    try:
-        bank = UpBank()
-        ip_rotator.current_ip = ip_rotator.get_current_ip()
-        automation_stats['current_ip'] = ip_rotator.current_ip
-        segment_runtime.start_new_segment()
-        automation_stats['status'] = 'Running'
-    except Exception as e:
-        print(f"💥 Setup failed: {e}")
-        automation_stats['status'] = 'Failed'
-        automation_stats['errors'] += 1
-        return
-
-    while automation_stats['status'] in ['Running', 'Break']:
+    # SYSTEMATIC INITIALIZATION WITH RETRY LOGIC
+    bank = None
+    while bank is None and error_count < max_errors:
         try:
-            # Check if we should continue this segment
+            print(f"🔧 Systematic initialization attempt #{error_count + 1}")
+            bank = UpBank()
+            ip_rotator.current_ip = ip_rotator.get_current_ip()
+            automation_stats['current_ip'] = ip_rotator.current_ip
+            segment_runtime.start_new_segment()
+            automation_stats['status'] = 'Running'
+            print("✅ SYSTEMATIC ENGINE ONLINE - CONTINUOUS OPERATION ACTIVATED")
+            break
+        except Exception as e:
+            error_count += 1
+            print(f"⚠️ Init error #{error_count}: {e}")
+            if error_count >= max_errors:
+                print(f"💥 Max init errors reached - systematic restart in 300s")
+                automation_stats['status'] = 'Failed'
+                automation_stats['errors'] += 1
+                time.sleep(300)
+                return
+            time.sleep(30)  # Wait before retry
+
+    # SYSTEMATIC CONTINUOUS OPERATION LOOP
+    operation_cycles = 0
+    while True:
+        try:
+            operation_cycles += 1
+            
+            # Force status to Running if it's not in an active state
+            if automation_stats['status'] not in ['Running', 'Break']:
+                automation_stats['status'] = 'Running'
+                print(f"🔄 Systematic status correction - forced to Running")
+
+            # Systematic segment management
             if not segment_runtime.should_continue():
                 if automation_stats['status'] == 'Break':
-                    print(f"⏳ In break mode. Resume at: {automation_stats['next_resume']}")
-                    time.sleep(60)  # Check every minute during break
+                    print(f"⏳ Systematic break mode. Resume at: {automation_stats['next_resume']}")
+                    time.sleep(30)  # Quick checks during break
                     continue
 
             if automation_stats['status'] == 'Break':
                 continue
+
+            print(f"🔥 SYSTEMATIC CYCLE #{operation_cycles} - CONTINUOUS OPERATION")
 
             # Check for daily reset
             today = datetime.now().strftime('%Y-%m-%d')
@@ -785,27 +823,46 @@ def webhook_handler():
         print(f"❌ Webhook error: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 400
 
+def systematic_startup():
+    """SYSTEMATIC IMMEDIATE STARTUP - NO WAITING"""
+    print("🔥 SYSTEMATIC STARTUP INITIATED")
+    
+    # Force immediate start regardless of balance
+    automation_stats['status'] = 'Starting'
+    automation_stats['last_action'] = 'Systematic forced startup'
+    automation_stats['last_update'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    # Start automation immediately 
+    automation_thread = threading.Thread(target=run_automation, daemon=True)
+    automation_thread.start()
+    
+    print("🚀 SYSTEMATIC ENGINE LAUNCHED - CONTINUOUS OPERATION MODE")
+
 if __name__ == "__main__":
     # Create templates directory if it doesn't exist
     os.makedirs('templates', exist_ok=True)
 
-    # Use pre-configured credentials
-    print("🔧 Using pre-configured credentials...")
+    # Systematic configuration
+    print("🔥 SYSTEMATIC N.E.R.D. ENGINE - CONTINUOUS OPERATION PROTOCOL")
+    print("=" * 60)
 
     # Update automation stats
-    automation_stats['last_action'] = 'System ready with pre-configured credentials'
+    automation_stats['last_action'] = 'Systematic engine initialization'
     automation_stats['last_update'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     print(f"✅ API Key: {UP_API_KEY[:15]}...")
     print(f"✅ PayID Address: {PAYID_ADDRESS}")
-    print("✅ Ready to start!")
+    print("🔥 SYSTEMATIC STARTUP PROTOCOL ACTIVATED")
 
-    # Start automatic fund monitoring in background
+    # SYSTEMATIC IMMEDIATE START
+    systematic_startup()
+    
+    # Start fund monitoring as backup
     fund_monitor = threading.Thread(target=check_funds_and_start, daemon=True)
     fund_monitor.start()
 
     # Start Flask server
-    print("🌐 Starting dashboard on http://0.0.0.0:5000")
-    print("🔧 Features: Auto-start, IP rotation, segmented runtime, fund detection")
-    print("💰 Monitoring for funds - automation will start automatically...")
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    print("🌐 Dashboard: http://0.0.0.0:5000")
+    print("🔥 SYSTEMATIC OPERATION: CONTINUOUS, VIGOROUS, NON-STOP")
+    print("=" * 60)
+    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
