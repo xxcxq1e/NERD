@@ -659,7 +659,7 @@ def run_automation():
                 delay = random.randint(180, 2400)  # 3min-40min
 
             elif action == 'spend':
-                # Realistic spending patterns
+                # Realistic spending patterns - transfer to SAVER instead of non-existent EXTERNAL
                 if current_hour in [7, 8, 12, 13, 18, 19]:  # Meal times
                     amount = round(random.uniform(8, 35), 2)
                     vendors = ["McDonald's", "Subway", "Domino's", "KFC", "Grill'd", "Boost Juice"]
@@ -670,7 +670,8 @@ def run_automation():
                     amount = round(random.uniform(5, 50), 2)
                     vendors = ["Uber", "Amazon", "Netflix", "Spotify", "Apple", "Google"]
                 
-                bank.transfer(amount, "TRANSACTIONAL", "EXTERNAL", random.choice(vendors))
+                # Use SAVER account instead of non-existent EXTERNAL
+                bank.transfer(amount, "TRANSACTIONAL", "SAVER", f"Spending: {random.choice(vendors)}")
                 delay = random.randint(1800, 14400)  # 30min-4hr
 
             elif action == 'interest':
