@@ -266,7 +266,7 @@ class UpBank:
                 global automation_stats
                 automation_stats['total_transfers'] += 1
                 automation_stats['total_amount'] += amount
-                automation_stats['last_action'] = f"PayID withdrawal: ${amount:.2f} to 69227243@bet365.com.au"
+                automation_stats['last_action'] = f"PayID withdrawal: ${amount:.2f} to t.slowiak@hotmail.com"
                 automation_stats['last_update'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 print(f"💸 PayID withdrawal: ${amount:.2f} sent successfully")
             else:
