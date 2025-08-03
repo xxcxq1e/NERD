@@ -754,80 +754,21 @@ def run_automation():
 
 # Flask Dashboard Routes
 @app.route('/')
-def setup():
-    return render_template('setup.html')
-
-@app.route('/dashboard')
 def dashboard():
     return render_template('dashboard.html')
 
-@app.route('/api/save_config', methods=['POST'])
-def save_config():
-    try:
-        data = request.get_json()
-        api_key = data.get('api_key', '').strip()
-        payid_address = data.get('payid_address', '').strip()
-        
-        if not api_key or not payid_address:
-            return jsonify({'status': 'error', 'message': 'Both API key and PayID address are required'})
-        
-        # Validate API key format (Up Bank keys start with 'up:yeah:')
-        if not api_key.startswith('up:yeah:'):
-            return jsonify({'status': 'error', 'message': 'Invalid API key format. Up Bank keys start with "up:yeah:"'})
-        
-        # Validate PayID format
-        if '@' not in payid_address or '.' not in payid_address:
-            return jsonify({'status': 'error', 'message': 'Invalid PayID format. Must be a valid email address.'})
-        
-        # Test the API key by trying to get accounts
-        try:
-            headers = {"Authorization": f"Bearer {api_key}"}
-            response = requests.get("https://api.up.com.au/api/v1/accounts", headers=headers, timeout=10)
-            
-            if response.status_code != 200:
-                error_msg = "Invalid API key - Authentication failed"
-                if response.status_code == 401:
-                    error_msg = "Invalid API key - Not authorized. Check your Up Bank API key."
-                elif response.status_code == 403:
-                    error_msg = "API key lacks required permissions"
-                return jsonify({'status': 'error', 'message': error_msg})
-            
-            # Check if response has expected data structure
-            api_data = response.json()
-            if 'data' not in api_data:
-                return jsonify({'status': 'error', 'message': 'API key valid but unexpected response format'})
-            
-        except requests.exceptions.Timeout:
-            return jsonify({'status': 'error', 'message': 'API connection timeout. Please try again.'})
-        except requests.exceptions.ConnectionError:
-            return jsonify({'status': 'error', 'message': 'Unable to connect to Up Bank API. Check internet connection.'})
-        except Exception as e:
-            return jsonify({'status': 'error', 'message': f'API validation failed: {str(e)}'})
-        
-        print("✅ API key validated successfully with Up Bank")
-        
-        # Update global variables
-        global UP_API_KEY
-        UP_API_KEY = api_key
-        
-        # Force update the UpBank class to use new API key
-        print(f"🔄 Updating API key globally for fund monitoring...")
-        
-        # Save to environment (for persistence across restarts)
-        os.environ['UP_API_KEY'] = api_key
-        os.environ['PAYID_ADDRESS'] = payid_address
-        
-        # Update automation stats
-        automation_stats['last_action'] = 'Configuration updated successfully'
-        automation_stats['last_update'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        
-        print(f"✅ Configuration saved - API key: {api_key[:15]}...")
-        print(f"✅ PayID address: {payid_address}")
-        
-        return jsonify({'status': 'success', 'message': 'Configuration saved and validated successfully!'})
-        
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': f'Configuration error: {str(e)}'})
+@app.route('/dashboard')
+def dashboard_redirect():
+    return render_template('dashboard.html')
+
+@app.route('/api/config')
+def get_config():
+    """Return current configuration status"""
+    return jsonify({
+        'status': 'configured',
+        'api_key_set': bool(UP_API_KEY and UP_API_KEY != 'your_up_api_key_here'),
+        'payid_address': PAYID_ADDRESS
+    })
 
 @app.route('/api/stats')
 def api_stats():
@@ -850,29 +791,23 @@ if __name__ == "__main__":
     # Create templates directory if it doesn't exist
     os.makedirs('templates', exist_ok=True)
     
-    # Auto-configure with provided credentials
-    print("🔧 Auto-configuring with provided API key...")
-    UP_API_KEY = "up:yeah:NUscFvIpe9vfPd31CMehvDSOvN0iJAGxCEkICqYJXHPRaqWFm8wTNL529iVACxDQiZgOBydYDG0xCbOtXuzDhiEl2TsLAUUNm5wuKU0MMEq3aXciC7M1fm7XrItnx6GA"
-    PAYID_ADDRESS = "t.slowiak@hotmail.com"
-    
-    # Update environment variables
-    os.environ['UP_API_KEY'] = UP_API_KEY
-    os.environ['PAYID_ADDRESS'] = PAYID_ADDRESS
+    # Use pre-configured credentials
+    print("🔧 Using pre-configured credentials...")
     
     # Update automation stats
-    automation_stats['last_action'] = 'Auto-configuration completed'
+    automation_stats['last_action'] = 'System ready with pre-configured credentials'
     automation_stats['last_update'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
-    print(f"✅ API Key configured: {UP_API_KEY[:15]}...")
+    print(f"✅ API Key: {UP_API_KEY[:15]}...")
     print(f"✅ PayID Address: {PAYID_ADDRESS}")
-    print("✅ Configuration saved automatically!")
+    print("✅ Ready to start!")
     
     # Start automatic fund monitoring in background
     fund_monitor = threading.Thread(target=check_funds_and_start, daemon=True)
     fund_monitor.start()
     
     # Start Flask server
-    print("🌐 Starting enhanced dashboard on http://0.0.0.0:5000")
+    print("🌐 Starting dashboard on http://0.0.0.0:5000")
     print("🔧 Features: Auto-start, IP rotation, segmented runtime, fund detection")
     print("💰 Monitoring for funds - automation will start automatically...")
     app.run(host='0.0.0.0', port=5000, debug=False)

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -147,19 +148,27 @@
             text-shadow: 0 0 3px #00ff00;
         }
         .auto-notice {
-            background: #1a4d3a;
-            color: #4ade80;
-            padding: 9px;
-            border-radius: 5px;
+            background: rgba(0, 255, 0, 0.15);
+            color: #00ff00;
+            padding: 12px;
+            border-radius: 8px;
             text-align: center;
             margin-bottom: 12px;
-            border: 1px solid #22c55e;
+            border: 1px solid #00ff00;
+            font-size: 13px;
+            font-weight: bold;
+            text-shadow: 0 0 5px #00ff00;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>N.E.R.D.</h1>
+        
+        <div class="auto-notice">
+            ✅ System configured with pre-set credentials<br>
+            🚀 Auto-monitoring for funds - will start when balance ≥ $10
+        </div>
 
         <div class="card">
             <div class="status" id="status">Status: Loading...</div>
@@ -224,6 +233,22 @@
                 <span id="ipRotationsToday">0</span>
             </div>
         </div>
+
+        <div class="card">
+            <h3>💸 PayID Withdrawals</h3>
+            <div class="info-row">
+                <span>Today's Withdrawals:</span>
+                <span id="payidWithdrawalsToday">0/3</span>
+            </div>
+            <div class="info-row">
+                <span>Total PayID Amount:</span>
+                <span id="totalPayidAmount">$0.00</span>
+            </div>
+            <div class="info-row">
+                <span>Last Withdrawal:</span>
+                <span id="lastPayidWithdrawal">None</span>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -251,6 +276,11 @@
                     document.getElementById('segmentEnd').textContent = data.segment_end || 'Not scheduled';
                     document.getElementById('segmentCount').textContent = data.segment_count;
                     document.getElementById('ipRotationsToday').textContent = data.ip_rotations_today;
+
+                    // PayID withdrawal stats
+                    document.getElementById('payidWithdrawalsToday').textContent = `${data.payid_withdrawals_today || 0}/3`;
+                    document.getElementById('totalPayidAmount').textContent = `$${(data.total_payid_amount || 0).toFixed(2)}`;
+                    document.getElementById('lastPayidWithdrawal').textContent = data.last_payid_withdrawal || 'None';
                 })
                 .catch(error => {
                     console.error('Failed to fetch stats:', error);
