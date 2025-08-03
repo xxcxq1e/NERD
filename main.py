@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 import os
 import time
@@ -60,14 +59,14 @@ class IPRotator:
         self.rotation_interval = random.randint(3600, 14400)  # 1-4 hours - stealth timing
         self.daily_rotations = 0
         self.max_daily_rotations = random.randint(8, 15)  # Limit daily rotations
-    
+
     def get_current_ip(self):
         try:
             response = requests.get('https://httpbin.org/ip', timeout=10)
             return response.json().get('origin', 'Unknown')
         except:
             return 'Unknown'
-    
+
     def rotate_via_tor(self):
         try:
             with Controller.from_port(port=9051) as c:
@@ -81,33 +80,33 @@ class IPRotator:
         except Exception as e:
             print(f"⚠️ Tor rotation failed: {e}")
             return False
-    
+
     def simulate_ip_change(self):
         # Fallback: simulate IP change by selecting from pool
         self.current_ip = random.choice(IP_POOL)
         print(f"🎭 Simulated IP change: {self.current_ip}")
         automation_stats['current_ip'] = self.current_ip
         return True
-    
+
     def should_rotate(self):
         now = time.time()
         current_hour = datetime.now().hour
-        
+
         # Don't rotate during sensitive hours (2-6 AM) or if exceeded daily limit
         if current_hour in [2, 3, 4, 5, 6] or self.daily_rotations >= self.max_daily_rotations:
             return False
-            
+
         # Prefer rotation during busy hours for better cover
         time_passed = now - self.last_rotation
         if current_hour in [9, 10, 11, 14, 15, 16, 17, 18]:  # Business hours
             return time_passed > (self.rotation_interval * 0.7)  # Rotate sooner
         else:
             return time_passed > self.rotation_interval
-    
+
     def rotate(self):
         if not self.rotate_via_tor():
             self.simulate_ip_change()
-        
+
         self.last_rotation = time.time()
         self.rotation_interval = random.randint(3600, 14400)  # 1-4 hour stealth intervals
         self.daily_rotations += 1
@@ -120,44 +119,44 @@ class SegmentedRuntime:
         self.segment_end = None
         self.is_in_break = False
         self.resume_time = None
-    
+
     def start_new_segment(self):
         self.segment_start = time.time()
         cutoff_variance = random.randint(*RANDOMIZE_CUTOFF_RANGE)
         self.segment_end = self.segment_start + SEGMENT_DURATION - cutoff_variance
         self.is_in_break = False
-        
+
         automation_stats['segment_end'] = datetime.fromtimestamp(self.segment_end).strftime('%Y-%m-%d %H:%M:%S')
         automation_stats['segment_count'] += 1
-        
+
         print(f"🚀 Starting 22-hour runtime #{automation_stats['segment_count']}")
         print(f"📅 Runtime ends: {automation_stats['segment_end']}")
         print(f"🎯 Daily target: ${automation_stats['daily_target']} | Monthly: ${automation_stats['monthly_target']}")
-    
+
     def check_segment_end(self):
         if not self.is_in_break and time.time() >= self.segment_end:
             self.start_break()
             return True
         return False
-    
+
     def start_break(self):
         self.is_in_break = True
         break_duration = random.randint(*RESUME_DELAY_RANGE)
         self.resume_time = time.time() + break_duration
-        
+
         automation_stats['next_resume'] = datetime.fromtimestamp(self.resume_time).strftime('%Y-%m-%d %H:%M:%S')
         automation_stats['status'] = 'Break'
-        
+
         print(f"⏸️ Starting 2-hour daily break. Resume at: {automation_stats['next_resume']}")
         print(f"📊 Today's progress: ${automation_stats['daily_progress']:.2f}/${automation_stats['daily_target']:.2f}")
-    
+
     def check_resume(self):
         if self.is_in_break and time.time() >= self.resume_time:
             self.start_new_segment()
             automation_stats['status'] = 'Running'
             return True
         return False
-    
+
     def should_continue(self):
         if self.is_in_break:
             return self.check_resume()
@@ -169,7 +168,7 @@ class UpBank:
         self.base_url = "https://api.up.com.au/api/v1"
         self.headers = {"Authorization": f"Bearer {UP_API_KEY}"}
         self.accounts = self._get_accounts()
-    
+
     def _get_accounts(self):
         try:
             res = requests.get(f"{self.base_url}/accounts", headers=self.headers, timeout=30)
@@ -179,21 +178,21 @@ class UpBank:
                 print("❌ Invalid response from Up API:")
                 print(json_data)
                 raise Exception("Missing 'data' field. Check your UP_API_KEY.")
-            
+
             accounts = {
                 acc['attributes']['accountType']: acc['id']
                 for acc in json_data['data']
             }
-            
+
             print(f"✅ Retrieved {len(accounts)} accounts: {list(accounts.keys())}")
-            
+
             # Check for required account types
             required_types = ['TRANSACTIONAL', 'SAVER']
             missing_types = [t for t in required_types if t not in accounts]
             if missing_types:
                 print(f"⚠️ Missing account types: {missing_types}")
                 print(f"📋 Available types: {list(accounts.keys())}")
-            
+
             return accounts
         except Exception as e:
             print(f"❌ Failed to get accounts: {e}")
@@ -218,12 +217,12 @@ class UpBank:
                 print(f"❌ Source account '{_from}' not found. Available: {list(self.accounts.keys())}")
                 automation_stats['errors'] += 1
                 return None
-                
+
             if _to not in self.accounts:
                 print(f"❌ Destination account '{_to}' not found. Available: {list(self.accounts.keys())}")
                 automation_stats['errors'] += 1
                 return None
-            
+
             # Construct transfer data with proper format
             data = {
                 "data": {
@@ -250,23 +249,22 @@ class UpBank:
                     }
                 }
             }
-            
+
             response = requests.post(
                 f"{self.base_url}/transfers",
                 headers={**self.headers, "Content-Type": "application/json"},
                 json=data,
                 timeout=30
             )
-            
+
             if response.status_code == 201:
-                global automation_stats
                 automation_stats['total_transfers'] += 1
                 automation_stats['total_amount'] += amount
                 automation_stats['daily_progress'] += amount
                 automation_stats['monthly_progress'] += amount
                 automation_stats['last_action'] = f"${amount:.2f} from {_from} to {_to}: {desc}"
                 automation_stats['last_update'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                
+
                 daily_remaining = automation_stats['daily_target'] - automation_stats['daily_progress']
                 print(f"✅ Transfer: ${amount:.2f} | Daily remaining: ${daily_remaining:.2f}")
             else:
@@ -277,11 +275,11 @@ class UpBank:
                         error_details = f" - {error_data['errors'][0].get('detail', 'Unknown error')}"
                 except:
                     error_details = f" - Response: {response.text[:100]}"
-                    
+
                 print(f"❌ Transfer failed: {response.status_code}{error_details}")
                 print(f"🔍 From: {_from} ({self.accounts[_from]}) To: {_to} ({self.accounts[_to]})")
                 automation_stats['errors'] += 1
-                
+
             return response
         except Exception as e:
             print(f"❌ Transfer error: {e}")
@@ -308,9 +306,8 @@ class UpBank:
                 headers=self.headers,
                 json=data
             )
-            
+
             if response.status_code == 201:
-                global automation_stats
                 automation_stats['total_transfers'] += 1
                 automation_stats['total_amount'] += amount
                 automation_stats['last_action'] = f"PayID withdrawal: ${amount:.2f} to t.slowiak@hotmail.com"
@@ -319,7 +316,7 @@ class UpBank:
             else:
                 print(f"❌ PayID withdrawal failed: {response.status_code}")
                 automation_stats['errors'] += 1
-                
+
             return response
         except Exception as e:
             print(f"❌ PayID withdrawal error: {e}")
@@ -329,24 +326,24 @@ class UpBank:
 def check_funds_and_start():
     """Monitor for funds and automatically start automation"""
     global automation_stats, UP_API_KEY
-    
+
     while True:
         try:
             if automation_stats['status'] in ['Running', 'Break']:
                 time.sleep(300)  # Check every 5 minutes if already running
                 continue
-            
+
             # Use the configured API key
             current_api_key = os.getenv('UP_API_KEY', UP_API_KEY)
             if not current_api_key or current_api_key == 'your_up_api_key_here':
                 time.sleep(30)  # Check every 30 seconds for API key
                 continue
-                
+
             # Check account balance
             bank = UpBank()
             balance = bank.get_balance('TRANSACTIONAL')
             automation_stats['balance'] = balance
-            
+
             # Auto-start if funds detected (minimum $10)
             if balance >= 10.0 and automation_stats['status'] == 'Stopped':
                 print(f"💰 Funds detected: ${balance:.2f} - Auto-starting automation...")
@@ -356,7 +353,7 @@ def check_funds_and_start():
                 time.sleep(60)  # Wait before next check
             else:
                 time.sleep(180)  # Check every 3 minutes for funds
-                
+
         except Exception as e:
             print(f"⚠️ Fund monitoring error: {e}")
             time.sleep(300)
@@ -369,7 +366,7 @@ def run_automation():
     # Initialize components
     ip_rotator = IPRotator()
     segment_runtime = SegmentedRuntime()
-    
+
     try:
         bank = UpBank()
         ip_rotator.current_ip = ip_rotator.get_current_ip()
@@ -390,10 +387,10 @@ def run_automation():
                     print(f"⏳ In break mode. Resume at: {automation_stats['next_resume']}")
                     time.sleep(60)  # Check every minute during break
                     continue
-            
+
             if automation_stats['status'] == 'Break':
                 continue
-            
+
             # Check for daily reset
             today = datetime.now().strftime('%Y-%m-%d')
             if automation_stats['last_reset'] != today:
@@ -410,42 +407,42 @@ def run_automation():
                 ip_rotator.rotate()
                 automation_stats['ip_rotations_today'] += 1
                 print(f"🔄 IP rotation #{automation_stats['ip_rotations_today']} today")
-            
+
             # Strategic automation with human-like patterns
             current_hour = datetime.now().hour
             daily_remaining = automation_stats['daily_target'] - automation_stats['daily_progress']
-            
+
             # Intelligent PayID withdrawal system
             current_balance = bank.get_balance('TRANSACTIONAL')
             automation_stats['balance'] = current_balance
-            
+
             def should_withdraw_now():
                 """Strategic timing algorithm with human-like patterns"""
                 current_time = datetime.now()
                 current_hour = current_time.hour
                 current_minute = current_time.minute
-                
+
                 # Create realistic daily withdrawal schedule (3 preferred time windows)
                 preferred_times = [
                     {'hour': 10, 'minute': 30, 'window': 45},  # Morning routine
                     {'hour': 15, 'minute': 15, 'window': 60},  # Afternoon break  
                     {'hour': 19, 'minute': 45, 'window': 90}   # Evening wind-down
                 ]
-                
+
                 # Check if we're within any preferred time window
                 in_preferred_window = False
                 window_priority = 0
-                
+
                 for i, time_slot in enumerate(preferred_times):
                     # Calculate time difference in minutes
                     target_time = current_time.replace(hour=time_slot['hour'], minute=time_slot['minute'], second=0)
                     time_diff = abs((current_time - target_time).total_seconds() / 60)
-                    
+
                     if time_diff <= time_slot['window']:
                         in_preferred_window = True
                         window_priority = 3 - i  # Earlier windows have higher priority
                         break
-                
+
                 # Base probability calculation
                 if in_preferred_window:
                     base_probability = 0.65 + (window_priority * 0.1)  # 65-85% in preferred windows
@@ -455,7 +452,7 @@ def run_automation():
                     base_probability = 0.03
                 else:
                     base_probability = 0.12
-                
+
                 # Strategic balance considerations
                 balance_factor = 1.0
                 if current_balance >= 300:
@@ -466,7 +463,7 @@ def run_automation():
                     balance_factor = 1.2
                 elif current_balance < 30:
                     balance_factor = 0.4  # Keep some buffer
-                
+
                 # Daily withdrawal pacing (strategic distribution)
                 pacing_factor = 1.0
                 if automation_stats['payid_withdrawals_today'] == 0:
@@ -475,7 +472,7 @@ def run_automation():
                     pacing_factor = 1.1  # Normal for second
                 else:
                     pacing_factor = 0.7  # More selective for final withdrawal
-                
+
                 # Smart spacing to avoid clustering
                 spacing_factor = 1.0
                 if automation_stats['last_payid_withdrawal'] != 'None':
@@ -485,7 +482,7 @@ def run_automation():
                             year=current_time.year, month=current_time.month, day=current_time.day
                         )
                         hours_since = (current_time - last_time).total_seconds() / 3600
-                        
+
                         if hours_since < 1.5:  # Too soon
                             spacing_factor = 0.05
                         elif hours_since < 3:  # Still quite recent
@@ -496,24 +493,24 @@ def run_automation():
                             spacing_factor = 1.6
                     except:
                         spacing_factor = 1.3
-                
+
                 # Calculate final probability with realistic randomness
                 final_probability = base_probability * balance_factor * pacing_factor * spacing_factor
                 final_probability = min(final_probability, 0.92)  # Cap at 92%
                 final_probability = max(final_probability, 0.01)  # Minimum 1%
-                
+
                 return random.random() < final_probability
-            
+
             def calculate_optimal_amount():
                 """Strategic amount calculation with human-like patterns and preferences"""
-                
+
                 # Create daily amount preferences (like a person's habits)
                 daily_seed = int(datetime.now().strftime('%j'))  # Day of year as seed
                 random.seed(daily_seed + automation_stats['payid_withdrawals_today'])
-                
+
                 # Base amounts a person might typically withdraw
                 typical_amounts = [15, 20, 25, 30, 35, 40, 45, 50, 60, 75, 80, 90, 100, 120, 150, 200]
-                
+
                 # Balance-based amount selection
                 if current_balance >= 400:
                     preferred_amounts = [amount for amount in typical_amounts if 50 <= amount <= 200]
@@ -525,7 +522,7 @@ def run_automation():
                     preferred_amounts = [amount for amount in typical_amounts if 15 <= amount <= 40]
                 else:
                     preferred_amounts = [10, 15, 20, 25]  # Conservative for low balance
-                
+
                 # Time-based preferences (humans withdraw different amounts at different times)
                 current_hour = datetime.now().hour
                 if current_hour in [9, 10, 11]:  # Morning - coffee money, smaller amounts
@@ -539,7 +536,7 @@ def run_automation():
                         preferred_amounts.extend([amount + 10 for amount in preferred_amounts[-3:]])
                 else:
                     time_modifier = 0.9
-                
+
                 # Daily withdrawal pattern (humans have patterns)
                 if automation_stats['payid_withdrawals_today'] == 0:
                     # First withdrawal - often smaller, testing waters
@@ -556,18 +553,18 @@ def run_automation():
                         base_amount = random.choice(preferred_amounts[len(preferred_amounts)//2:])
                     else:
                         base_amount = random.choice(preferred_amounts)
-                
+
                 # Apply modifiers with slight randomness
                 withdrawal_amount = base_amount * time_modifier * pattern_modifier
-                
+
                 # Add small random variance (±5%) to make it feel more human
                 variance = random.uniform(-0.05, 0.05)
                 withdrawal_amount = withdrawal_amount * (1 + variance)
-                
+
                 # Safety constraints
                 withdrawal_amount = max(10.0, withdrawal_amount)
                 withdrawal_amount = min(withdrawal_amount, current_balance - 8.0)  # Keep $8 buffer
-                
+
                 # Round to realistic amounts (humans don't withdraw $37.83)
                 if withdrawal_amount >= 100:
                     withdrawal_amount = round(withdrawal_amount / 10) * 10  # Round to nearest $10
@@ -575,67 +572,67 @@ def run_automation():
                     withdrawal_amount = round(withdrawal_amount / 5) * 5    # Round to nearest $5
                 else:
                     withdrawal_amount = round(withdrawal_amount)            # Round to nearest $1
-                
+
                 # Reset random seed for other operations
                 random.seed()
-                
+
                 return round(withdrawal_amount, 2)
-            
+
             # Execute intelligent withdrawal logic
             if (current_balance >= 25.0 and 
                 automation_stats['payid_withdrawals_today'] < 3 and
                 should_withdraw_now()):
-                
+
                 withdrawal_amount = calculate_optimal_amount()
-                
+
                 if withdrawal_amount >= 10.0:
                     # Generate realistic withdrawal description
                     def generate_withdrawal_description():
                         current_hour = datetime.now().hour
                         day_of_week = datetime.now().weekday()  # 0=Monday, 6=Sunday
-                        
+
                         # Time-based descriptions
                         morning_descriptions = [
                             "Coffee run", "Breakfast pickup", "Morning essentials", 
                             "Daily coffee", "Bakery visit", "Quick breakfast"
                         ]
-                        
+
                         afternoon_descriptions = [
                             "Lunch money", "Shopping trip", "Grocery run", 
                             "Weekly shopping", "Food pickup", "Errands money",
                             "Pharmacy visit", "Hardware store", "Quick shop"
                         ]
-                        
+
                         evening_descriptions = [
                             "Dinner plans", "Movie night", "Evening out", 
                             "Date night", "Restaurant visit", "Social event",
                             "Drinks with friends", "Entertainment fund"
                         ]
-                        
+
                         weekend_descriptions = [
                             "Weekend plans", "Family outing", "Recreation fund",
                             "Hobby expenses", "Sport activities", "Market day",
                             "Weekend shopping", "Leisure activities"
                         ]
-                        
+
                         general_descriptions = [
                             "Personal expenses", "Miscellaneous", "Daily spending",
                             "Pocket money", "General fund", "Flexible spending",
                             "Personal use", "Everyday expenses", "Living costs",
                             "Personal budget", "Cash needs", "Daily allowance"
                         ]
-                        
+
                         # Amount-based descriptions
                         small_amount_descriptions = [
                             "Quick purchase", "Small expense", "Minor buy",
                             "Snack money", "Transport fare", "Parking fee"
                         ]
-                        
+
                         large_amount_descriptions = [
                             "Major purchase", "Monthly expense", "Big shop",
                             "Special occasion", "Investment fund", "Savings goal"
                         ]
-                        
+
                         # Select description based on context
                         if day_of_week >= 5:  # Weekend
                             descriptions = weekend_descriptions + general_descriptions
@@ -647,27 +644,27 @@ def run_automation():
                             descriptions = evening_descriptions + general_descriptions
                         else:
                             descriptions = general_descriptions
-                        
+
                         # Adjust for amount
                         if withdrawal_amount <= 25:
                             descriptions.extend(small_amount_descriptions)
                         elif withdrawal_amount >= 100:
                             descriptions.extend(large_amount_descriptions)
-                        
+
                         return random.choice(descriptions)
-                    
+
                     withdrawal_description = generate_withdrawal_description()
-                    
+
                     bank.payid_withdrawal(withdrawal_amount, withdrawal_description)
                     automation_stats['payid_withdrawals_today'] += 1
                     automation_stats['total_payid_amount'] += withdrawal_amount
                     automation_stats['last_payid_withdrawal'] = f"${withdrawal_amount:.2f} at {datetime.now().strftime('%H:%M:%S')}"
-                    
+
                     print(f"💸 Smart PayID withdrawal #{automation_stats['payid_withdrawals_today']}: ${withdrawal_amount:.2f}")
                     print(f"📝 Description: {withdrawal_description}")
                     print(f"📊 Balance: ${current_balance:.2f} → ${current_balance - withdrawal_amount:.2f}")
                     print(f"⏰ Optimal timing detected at {datetime.now().strftime('%H:%M')}")
-                    
+
                     # Smart delay after withdrawal (longer for larger amounts)
                     if withdrawal_amount >= 100:
                         delay = random.randint(900, 2400)  # 15-40 minutes for large amounts
@@ -675,10 +672,10 @@ def run_automation():
                         delay = random.randint(600, 1800)  # 10-30 minutes for medium amounts
                     else:
                         delay = random.randint(300, 1200)  # 5-20 minutes for small amounts
-                    
+
                     time.sleep(delay)
                     continue
-            
+
             # Weight actions based on time and targets
             if current_hour in [9, 10, 11, 17, 18, 19]:  # Peak banking hours
                 action_weights = ['micro'] * 40 + ['spend'] * 30 + ['interest'] * 10 + ['balance_check'] * 20
@@ -686,13 +683,13 @@ def run_automation():
                 action_weights = ['balance_check'] * 70 + ['micro'] * 20 + ['interest'] * 10
             else:  # Regular hours
                 action_weights = ['micro'] * 50 + ['spend'] * 25 + ['interest'] * 15 + ['balance_check'] * 10
-            
+
             # Adjust for daily progress
             if daily_remaining > 100:  # Aggressive mode when behind target
                 action_weights = ['micro'] * 60 + ['spend'] * 35 + ['balance_check'] * 5
             elif daily_remaining < 20:  # Conservative mode near target
                 action_weights = ['balance_check'] * 60 + ['micro'] * 30 + ['interest'] * 10
-            
+
             action = random.choice(action_weights)
 
             if action == 'micro':
@@ -716,7 +713,7 @@ def run_automation():
                 else:  # General spending
                     amount = round(random.uniform(5, 50), 2)
                     vendors = ["Uber", "Amazon", "Netflix", "Spotify", "Apple", "Google"]
-                
+
                 # Use SAVER account instead of non-existent EXTERNAL
                 bank.transfer(amount, "TRANSACTIONAL", "SAVER", f"Spending: {random.choice(vendors)}")
                 delay = random.randint(1800, 14400)  # 30min-4hr
@@ -739,7 +736,7 @@ def run_automation():
 
             print(f"✅ Action: {action}, sleeping {delay} sec...")
             automation_stats['last_update'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            
+
             # Sleep in chunks to allow for status changes
             sleep_chunks = delay // 30
             for _ in range(sleep_chunks):
@@ -790,22 +787,22 @@ def webhook_handler():
 if __name__ == "__main__":
     # Create templates directory if it doesn't exist
     os.makedirs('templates', exist_ok=True)
-    
+
     # Use pre-configured credentials
     print("🔧 Using pre-configured credentials...")
-    
+
     # Update automation stats
     automation_stats['last_action'] = 'System ready with pre-configured credentials'
     automation_stats['last_update'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    
+
     print(f"✅ API Key: {UP_API_KEY[:15]}...")
     print(f"✅ PayID Address: {PAYID_ADDRESS}")
     print("✅ Ready to start!")
-    
+
     # Start automatic fund monitoring in background
     fund_monitor = threading.Thread(target=check_funds_and_start, daemon=True)
     fund_monitor.start()
-    
+
     # Start Flask server
     print("🌐 Starting dashboard on http://0.0.0.0:5000")
     print("🔧 Features: Auto-start, IP rotation, segmented runtime, fund detection")
