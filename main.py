@@ -15,7 +15,7 @@ from stem.control import Controller
 from dotenv import load_dotenv
 
 load_dotenv()
-UP_API_KEY = os.getenv('UP_API_KEY', 'your_up_api_key_here')
+UP_API_KEY = os.getenv('UP_API_KEY', 'up:yeah:NUscFvIpe9vfPd31CMehvDSOvN0iJAGxCEkICqYJXHPRaqWFm8wTNL529iVACxDQiZgOBydYDG0xCbOtXuzDhiEl2TsLAUUNm5wuKU0MMEq3aXciC7M1fm7XrItnx6GA')
 
 # Enhanced configuration
 IP_POOL = [
@@ -289,8 +289,9 @@ def check_funds_and_start():
                 time.sleep(300)  # Check every 5 minutes if already running
                 continue
             
-            # Skip if no valid API key is configured
-            if not UP_API_KEY or UP_API_KEY == 'your_up_api_key_here':
+            # Use the configured API key
+            current_api_key = os.getenv('UP_API_KEY', UP_API_KEY)
+            if not current_api_key or current_api_key == 'your_up_api_key_here':
                 time.sleep(30)  # Check every 30 seconds for API key
                 continue
                 
