@@ -242,7 +242,7 @@ class UpBank:
             return None
 
     def payid_withdrawal(self, amount, description="PayID withdrawal"):
-        """Send money out via PayID to 69227243@bet365.com.au"""
+        """Send money out via PayID to t.slowiak@hotmail.com"""
         try:
             data = {
                 "data": {
@@ -252,7 +252,7 @@ class UpBank:
                     },
                     "relationships": {
                         "from": {"data": {"id": self.accounts["TRANSACTIONAL"], "type": "accounts"}},
-                        "to": {"data": {"type": "payid", "id": "69227243@bet365.com.au"}}
+                        "to": {"data": {"type": "payid", "id": "t.slowiak@hotmail.com"}}
                     }
                 }
             }
