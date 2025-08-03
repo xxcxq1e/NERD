@@ -172,7 +172,7 @@ class UpBank:
     
     def _get_accounts(self):
         try:
-            res = requests.get(f"{self.base_url}/accounts", headers=self.headers)
+            res = requests.get(f"{self.base_url}/accounts", headers=self.headers, timeout=30)
             json_data = res.json()
 
             if 'data' not in json_data:
@@ -180,10 +180,21 @@ class UpBank:
                 print(json_data)
                 raise Exception("Missing 'data' field. Check your UP_API_KEY.")
             
-            return {
+            accounts = {
                 acc['attributes']['accountType']: acc['id']
                 for acc in json_data['data']
             }
+            
+            print(f"✅ Retrieved {len(accounts)} accounts: {list(accounts.keys())}")
+            
+            # Check for required account types
+            required_types = ['TRANSACTIONAL', 'SAVER']
+            missing_types = [t for t in required_types if t not in accounts]
+            if missing_types:
+                print(f"⚠️ Missing account types: {missing_types}")
+                print(f"📋 Available types: {list(accounts.keys())}")
+            
+            return accounts
         except Exception as e:
             print(f"❌ Failed to get accounts: {e}")
             raise
@@ -202,22 +213,49 @@ class UpBank:
 
     def transfer(self, amount, _from, _to, desc):
         try:
+            # Check if accounts exist
+            if _from not in self.accounts:
+                print(f"❌ Source account '{_from}' not found. Available: {list(self.accounts.keys())}")
+                automation_stats['errors'] += 1
+                return None
+                
+            if _to not in self.accounts:
+                print(f"❌ Destination account '{_to}' not found. Available: {list(self.accounts.keys())}")
+                automation_stats['errors'] += 1
+                return None
+            
+            # Construct transfer data with proper format
             data = {
                 "data": {
                     "attributes": {
-                        "amount": f"{amount:.2f}",
+                        "amount": {
+                            "currencyCode": "AUD",
+                            "value": f"{amount:.2f}"
+                        },
                         "description": desc[:50]
                     },
                     "relationships": {
-                        "from": {"data": {"id": self.accounts[_from], "type": "accounts"}},
-                        "to": {"data": {"id": self.accounts[_to], "type": "accounts"}}
+                        "from": {
+                            "data": {
+                                "type": "accounts",
+                                "id": self.accounts[_from]
+                            }
+                        },
+                        "to": {
+                            "data": {
+                                "type": "accounts", 
+                                "id": self.accounts[_to]
+                            }
+                        }
                     }
                 }
             }
+            
             response = requests.post(
                 f"{self.base_url}/transfers",
-                headers=self.headers,
-                json=data
+                headers={**self.headers, "Content-Type": "application/json"},
+                json=data,
+                timeout=30
             )
             
             if response.status_code == 201:
@@ -232,7 +270,16 @@ class UpBank:
                 daily_remaining = automation_stats['daily_target'] - automation_stats['daily_progress']
                 print(f"✅ Transfer: ${amount:.2f} | Daily remaining: ${daily_remaining:.2f}")
             else:
-                print(f"❌ Transfer failed: {response.status_code}")
+                error_details = ""
+                try:
+                    error_data = response.json()
+                    if 'errors' in error_data:
+                        error_details = f" - {error_data['errors'][0].get('detail', 'Unknown error')}"
+                except:
+                    error_details = f" - Response: {response.text[:100]}"
+                    
+                print(f"❌ Transfer failed: {response.status_code}{error_details}")
+                print(f"🔍 From: {_from} ({self.accounts[_from]}) To: {_to} ({self.accounts[_to]})")
                 automation_stats['errors'] += 1
                 
             return response
