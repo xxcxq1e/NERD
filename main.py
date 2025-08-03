@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 UP_API_KEY = os.getenv('UP_API_KEY', 'up:yeah:NUscFvIpe9vfPd31CMehvDSOvN0iJAGxCEkICqYJXHPRaqWFm8wTNL529iVACxDQiZgOBydYDG0xCbOtXuzDhiEl2TsLAUUNm5wuKU0MMEq3aXciC7M1fm7XrItnx6GA')
+PAYID_ADDRESS = 't.slowiak@hotmail.com'
 
 # Enhanced configuration
 IP_POOL = [
