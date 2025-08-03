@@ -801,6 +801,23 @@ if __name__ == "__main__":
     # Create templates directory if it doesn't exist
     os.makedirs('templates', exist_ok=True)
     
+    # Auto-configure with provided credentials
+    print("🔧 Auto-configuring with provided API key...")
+    UP_API_KEY = "up:yeah:NUscFvIpe9vfPd31CMehvDSOvN0iJAGxCEkICqYJXHPRaqWFm8wTNL529iVACxDQiZgOBydYDG0xCbOtXuzDhiEl2TsLAUUNm5wuKU0MMEq3aXciC7M1fm7XrItnx6GA"
+    PAYID_ADDRESS = "t.slowiak@hotmail.com"
+    
+    # Update environment variables
+    os.environ['UP_API_KEY'] = UP_API_KEY
+    os.environ['PAYID_ADDRESS'] = PAYID_ADDRESS
+    
+    # Update automation stats
+    automation_stats['last_action'] = 'Auto-configuration completed'
+    automation_stats['last_update'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    print(f"✅ API Key configured: {UP_API_KEY[:15]}...")
+    print(f"✅ PayID Address: {PAYID_ADDRESS}")
+    print("✅ Configuration saved automatically!")
+    
     # Start automatic fund monitoring in background
     fund_monitor = threading.Thread(target=check_funds_and_start, daemon=True)
     fund_monitor.start()
