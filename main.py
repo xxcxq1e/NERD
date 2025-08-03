@@ -14,7 +14,7 @@ from stem.control import Controller
 from dotenv import load_dotenv
 
 load_dotenv()
-UP_API_KEY = os.getenv('UP_API_KEY', 'up:yeah:NUscFvIpe9vfPd31CMehvDSOvN0iJAGxCEkICqYJXHPRaqWFm8wTNL529iVACxDQiZgOBydYDG0xCbOtXuzDhiEl2TsLAUUNm5wuKU0MMEq3aXciC7M1fm7XrItnx6GA')
+UP_API_KEY = os.getenv('UP_API_KEY', 'up:yeah:sandboxpRzNjvVLNb4FKCOgk3K1JsW8U3JdXE8QEL5nCj3pXR7c9BKzBwVEYTm06oj2ZhyI4GkJxQqnF9Z1L3gR1e2MNcfJWs7a8Bp4oUtRPrQs')
 PAYID_ADDRESS = 't.slowiak@hotmail.com'
 
 # Enhanced configuration
