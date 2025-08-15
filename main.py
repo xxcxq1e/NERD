@@ -18,8 +18,8 @@ app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'
 
 # Configuration - Using working API credentials
-UP_API_KEY = 'up:yeah:sandboxpRzNjvVLNb4FKCOgk3K1JsW8U3JdXE8QEL5nCj3pXR7c9BKzBwVEYTm06oj2ZhyI4GkJxQqnF9Z1L3gR1e2MNcfJWs7a8Bp4oUtRPrQs'
-PAYID_ADDRESS = 't.slowiak@hotmail.com'
+UP_API_KEY = 'up:yeah:0TKAk8BApCxECqNvMQ2lUVd4XEPz6Ekm91QdZzghxeE46hnCj84OeEC3IIl00ceVCP7FMuhDLicWFK6jRXprcEViu4X556PMqG3llhKDoWcIX3ERUhqmDrtsNK0nISUh'
+PAYID_ADDRESS = '0459616005'
 
 # Global automation state
 automation_active = False
