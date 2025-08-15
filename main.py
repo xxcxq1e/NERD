@@ -197,31 +197,32 @@ class UpBankAutomation:
             # REAL TRANSFER - Execute actual Up Bank API transfer with correct structure
             transfer_data = {
                 "data": {
-                    "type": "transactions", 
+                    "type": "transfers",
                     "attributes": {
-                        "amount": {"value": f"-{amount:.2f}", "currencyCode": "AUD"},
+                        "amount": {"value": f"{amount:.2f}", "currencyCode": "AUD"},
                         "description": f"Strategic {datetime.now().strftime('%H%M%S')}"
                     },
                     "relationships": {
-                        "account": {"data": {"id": self.accounts[from_account], "type": "accounts"}},
-                        "transferAccount": {"data": {"id": self.accounts[to_account], "type": "accounts"}}
+                        "from": {"data": {"id": self.accounts[from_account], "type": "accounts"}},
+                        "to": {"data": {"id": self.accounts[to_account], "type": "accounts"}}
                     }
                 }
             }
             
             # Execute REAL transfer via Up Bank API - Using correct endpoint
             response = requests.post(
-                f'{self.base_url}/transactions',
+                f'{self.base_url}/transfers',
                 headers=self.headers,
                 json=transfer_data,
                 timeout=30
             )
             
-            logger.info(f"📡 API Response: {response.status_code}")
+            logger.info(f"📡 Transfer API Response: {response.status_code}")
             if response.status_code in [200, 201, 202]:
                 response_data = response.json()
                 logger.info(f"✅ REAL TRANSFER SUCCESS: ${amount:.2f} from {from_account} to {to_account}")
-                logger.info(f"📋 Transaction ID: {response_data.get('data', {}).get('id', 'Unknown')}")
+                logger.info(f"📋 Transfer ID: {response_data.get('data', {}).get('id', 'Unknown')}")
+                logger.info(f"🔍 Full API Response: {response_data}")
                 
                 # Calculate actual profit from successful transfer
                 profit_margin = random.uniform(0.12, 0.18)  # 12-18% profit margin
@@ -250,9 +251,17 @@ class UpBankAutomation:
                 
                 return True
             else:
-                error_details = response.text
-                logger.error(f"❌ REAL TRANSFER FAILED: {response.status_code}")
-                logger.error(f"📄 Error details: {error_details}")
+                try:
+                    error_details = response.json()
+                    logger.error(f"❌ REAL TRANSFER FAILED: {response.status_code}")
+                    logger.error(f"📄 Error details: {error_details}")
+                    # Log specific Up Bank error messages
+                    if 'errors' in error_details:
+                        for error in error_details['errors']:
+                            logger.error(f"🚨 Up Bank Error: {error.get('title', '')} - {error.get('detail', '')}")
+                except:
+                    logger.error(f"❌ REAL TRANSFER FAILED: {response.status_code} - {response.text}")
+                
                 automation_stats['errors'] += 1
                 automation_stats['lifetime_errors'] += 1
                 return False
@@ -281,7 +290,7 @@ class UpBankAutomation:
                 "data": {
                     "type": "payments",
                     "attributes": {
-                        "amount": {"value": f"-{amount:.2f}", "currencyCode": "AUD"},
+                        "amount": {"value": f"{amount:.2f}", "currencyCode": "AUD"},
                         "description": f"Auto withdrawal {datetime.now().strftime('%H%M%S')}",
                         "reference": "NERD_AUTO"
                     },
@@ -289,7 +298,7 @@ class UpBankAutomation:
                         "account": {"data": {"id": primary_account, "type": "accounts"}},
                         "transferAccount": {
                             "data": {
-                                "type": "transferAccounts", 
+                                "type": "transferAccounts",
                                 "attributes": {
                                     "payId": self.payid_address
                                 }
@@ -301,14 +310,18 @@ class UpBankAutomation:
             
             # Execute REAL PayID transfer via Up Bank API - Using correct endpoint
             response = requests.post(
-                f'{self.base_url}/transactions',
+                f'{self.base_url}/payments',
                 headers=self.headers,
                 json=withdrawal_data,
                 timeout=30
             )
             
+            logger.info(f"📡 PayID API Response: {response.status_code}")
             if response.status_code in [200, 201, 202]:
+                response_data = response.json()
                 logger.info(f"✅ REAL PayID WITHDRAWAL: ${amount:.2f} sent to {self.payid_address}")
+                logger.info(f"📋 Payment ID: {response_data.get('data', {}).get('id', 'Unknown')}")
+                logger.info(f"🔍 Full PayID Response: {response_data}")
                 
                 # Update lifetime statistics with REAL withdrawal
                 automation_stats['lifetime_payid_withdrawals'] += 1
@@ -318,7 +331,15 @@ class UpBankAutomation:
                 save_persistent_data()
                 return True
             else:
-                logger.error(f"❌ REAL PayID WITHDRAWAL FAILED: {response.status_code} - {response.text}")
+                try:
+                    error_details = response.json()
+                    logger.error(f"❌ REAL PayID WITHDRAWAL FAILED: {response.status_code}")
+                    logger.error(f"📄 PayID Error details: {error_details}")
+                    if 'errors' in error_details:
+                        for error in error_details['errors']:
+                            logger.error(f"🚨 Up Bank PayID Error: {error.get('title', '')} - {error.get('detail', '')}")
+                except:
+                    logger.error(f"❌ REAL PayID WITHDRAWAL FAILED: {response.status_code} - {response.text}")
                 return False
                 
         except Exception as e:
