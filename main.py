@@ -202,15 +202,15 @@ class UpBankAutomation:
                         "description": f"Strategic transfer {datetime.now().strftime('%H%M%S')}"
                     },
                     "relationships": {
-                        "sourceAccount": {"data": {"id": self.accounts[from_account], "type": "accounts"}},
-                        "destinationAccount": {"data": {"id": self.accounts[to_account], "type": "accounts"}}
+                        "from": {"data": {"id": self.accounts[from_account], "type": "accounts"}},
+                        "to": {"data": {"id": self.accounts[to_account], "type": "accounts"}}
                     }
                 }
             }
             
             # Execute REAL transfer via Up Bank API
             response = requests.post(
-                f'{self.base_url}/transactions',
+                f'{self.base_url}/transfers',
                 headers=self.headers,
                 json=transfer_data,
                 timeout=30
