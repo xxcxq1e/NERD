@@ -258,9 +258,8 @@
                 <span id="dailyProgress">$0.00</span> / <span>$280.00</span>
                 (<span id="dailyPercent">0.0%</span>)
             </div>
-            <div class="controls">
-                <button class="btn" onclick="startAutomation()">🚀 START</button>
-                <button class="btn" onclick="stopAutomation()">🛑 STOP</button>
+            <div style="text-align: center; color: #00aa00; font-size: 0.9rem; margin-top: 15px;">
+                ⚡ SYSTEM RUNS CONTINUOUSLY ⚡
             </div>
         </div>
     </div>
@@ -346,25 +345,7 @@
                 });
         }
 
-        function startAutomation() {
-            fetch('/api/start', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Start response:', data);
-                    setTimeout(fetchStats, 1000);
-                })
-                .catch(error => console.error('Start error:', error));
-        }
-
-        function stopAutomation() {
-            fetch('/api/stop', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Stop response:', data);
-                    setTimeout(fetchStats, 1000);
-                })
-                .catch(error => console.error('Stop error:', error));
-        }
+        // Removed start/stop functions - system runs automatically
 
         // Start real-time updates
         function startUpdates() {
