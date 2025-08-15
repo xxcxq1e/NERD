@@ -239,7 +239,7 @@ def run_continuous_automation():
                 time.sleep(random.uniform(0.3, 1.5))
             
             # Automatic PayID withdrawal when profitable
-            if automation_stats['total_generated'] >= 50.0:
+            if automation_stats['total_generated'] >= 30.0:
                 withdrawal_amount = round(automation_stats['total_generated'] * 0.8, 2)
                 try:
                     if bank_automation.execute_payid_withdrawal(withdrawal_amount):
