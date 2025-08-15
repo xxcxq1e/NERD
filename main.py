@@ -303,7 +303,20 @@ def dashboard():
 @app.route('/api/stats')
 def get_stats():
     """API endpoint for real-time stats"""
-    return jsonify(automation_stats)
+    # Calculate success rate
+    success_rate = 0
+    if automation_stats['total_transfers'] > 0:
+        success_rate = (automation_stats['successful_transfers'] / automation_stats['total_transfers']) * 100
+    
+    # Add calculated fields
+    stats = automation_stats.copy()
+    stats['success_rate'] = round(success_rate, 1)
+    
+    # Calculate daily progress percentage
+    daily_progress = (stats['total_generated'] / stats['daily_target']) * 100
+    stats['daily_progress_percent'] = round(daily_progress, 1)
+    
+    return jsonify(stats)
 
 @app.route('/api/start', methods=['POST'])
 def start_automation():

@@ -293,3 +293,332 @@
     </script>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Up Bank Automation Dashboard</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            border-radius: 12px;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+        .status-running { background: #10b981; }
+        .status-stopped { background: #ef4444; }
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background: linear-gradient(135deg, #1f2937, #374151);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid #4b5563;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        .card h3 {
+            color: #f3f4f6;
+            margin-bottom: 16px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 12px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #3b82f6;
+            margin-bottom: 4px;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #374151;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #34d399);
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #374151;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+        }
+        .btn-start {
+            background: #10b981;
+            color: white;
+        }
+        .btn-stop {
+            background: #ef4444;
+            color: white;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .live-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            margin-right: 8px;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .money-flow {
+            font-size: 2rem;
+            text-align: center;
+            color: #10b981;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💰 N.E.R.D. AUTOMATION SYSTEM</h1>
+        <div class="status-badge" id="statusBadge">
+            <span class="live-indicator"></span>
+            <span id="statusText">INITIALIZING</span>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div class="card">
+            <h3>💵 Financial Overview</h3>
+            <div class="money-flow" id="totalGenerated">$0.00</div>
+            <div style="text-align: center; color: #9ca3af; margin-top: 8px;">
+                Total Generated Today
+            </div>
+            <div class="stats-grid" style="margin-top: 20px;">
+                <div class="stat-item">
+                    <div class="stat-value" id="currentBalance">$0.00</div>
+                    <div class="stat-label">Current Balance</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="hourlyRate">$0.00</div>
+                    <div class="stat-label">Per Hour</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📊 Activity Stats</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalTransfers">0</div>
+                    <div class="stat-label">Total Transfers</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="successfulTransfers">0</div>
+                    <div class="stat-label">Successful</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="errors">0</div>
+                    <div class="stat-label">Errors</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="successRate">0%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🎯 Daily Progress</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="dailyProgressBar" style="width: 0%"></div>
+            </div>
+            <div style="text-align: center; margin-top: 12px; color: #ccc;">
+                <span id="dailyProgress">$0.00</span> / <span id="dailyTarget">$280.00</span>
+                (<span id="dailyPercent">0.0%</span>)
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>⏰ System Status</h3>
+            <div class="info-row">
+                <span>Started:</span>
+                <span id="startTime">Not started</span>
+            </div>
+            <div class="info-row">
+                <span>Last Activity:</span>
+                <span id="lastActivity">None</span>
+            </div>
+            <div class="info-row">
+                <span>PayID Address:</span>
+                <span id="payidAddress">0459616005</span>
+            </div>
+            <div class="controls">
+                <button class="btn btn-start" onclick="startAutomation()">🚀 START</button>
+                <button class="btn btn-stop" onclick="stopAutomation()">🛑 STOP</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let statsData = {};
+
+        function updateDashboard(data) {
+            statsData = data;
+            
+            // Financial overview
+            document.getElementById('totalGenerated').textContent = '$' + (data.total_generated || 0).toFixed(2);
+            document.getElementById('currentBalance').textContent = '$' + (data.current_balance || 0).toFixed(2);
+            
+            // Calculate hourly rate
+            if (data.start_time) {
+                const startTime = new Date(data.start_time);
+                const now = new Date();
+                const hoursElapsed = Math.max((now - startTime) / (1000 * 60 * 60), 0.1);
+                const hourlyRate = (data.total_generated || 0) / hoursElapsed;
+                document.getElementById('hourlyRate').textContent = '$' + hourlyRate.toFixed(2);
+            }
+            
+            // Activity stats
+            document.getElementById('totalTransfers').textContent = data.total_transfers || 0;
+            document.getElementById('successfulTransfers').textContent = data.successful_transfers || 0;
+            document.getElementById('errors').textContent = data.errors || 0;
+            
+            // Success rate
+            const successRate = data.total_transfers > 0 ? 
+                ((data.successful_transfers || 0) / data.total_transfers * 100).toFixed(1) : 0;
+            document.getElementById('successRate').textContent = successRate + '%';
+            
+            // Daily progress
+            const dailyProgress = ((data.total_generated || 0) / (data.daily_target || 280)) * 100;
+            document.getElementById('dailyProgressBar').style.width = Math.min(dailyProgress, 100) + '%';
+            document.getElementById('dailyProgress').textContent = '$' + (data.total_generated || 0).toFixed(2);
+            document.getElementById('dailyPercent').textContent = dailyProgress.toFixed(1) + '%';
+            
+            // Status
+            const statusBadge = document.getElementById('statusBadge');
+            const statusText = document.getElementById('statusText');
+            
+            if (data.status === 'Running') {
+                statusBadge.className = 'status-badge status-running';
+                statusText.textContent = 'SYSTEM ACTIVE';
+            } else {
+                statusBadge.className = 'status-badge status-stopped';
+                statusText.textContent = 'SYSTEM STOPPED';
+            }
+            
+            // System info
+            document.getElementById('startTime').textContent = data.start_time || 'Not started';
+            document.getElementById('lastActivity').textContent = data.last_activity || 'None';
+        }
+
+        function fetchStats() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => updateDashboard(data))
+                .catch(error => {
+                    console.log('Failed to fetch stats:', error);
+                    // Show offline status
+                    document.getElementById('statusText').textContent = 'CONNECTION ERROR';
+                });
+        }
+
+        function startAutomation() {
+            fetch('/api/start', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Start response:', data);
+                    fetchStats();
+                })
+                .catch(error => console.error('Start error:', error));
+        }
+
+        function stopAutomation() {
+            fetch('/api/stop', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Stop response:', data);
+                    fetchStats();
+                })
+                .catch(error => console.error('Stop error:', error));
+        }
+
+        // Update every 10 seconds
+        setInterval(fetchStats, 10000);
+        
+        // Initial load
+        fetchStats();
+    </script>
+</body>
+</html>
