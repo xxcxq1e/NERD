@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 import json
 import logging
+import pickle
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -17,9 +18,63 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'
 
+# Persistent data file
+DATA_FILE = 'automation_data.pkl'
+
 # Configuration - Using working API credentials
 UP_API_KEY = 'up:yeah:0TKAk8BApCxECqNvMQ2lUVd4XEPz6Ekm91QdZzghxeE46hnCj84OeEC3IIl00ceVCP7FMuhDLicWFK6jRXprcEViu4X556PMqG3llhKDoWcIX3ERUhqmDrtsNK0nISUh'
 PAYID_ADDRESS = '0459616005'
+
+def load_persistent_data():
+    """Load persistent automation data from file"""
+    try:
+        if os.path.exists(DATA_FILE):
+            with open(DATA_FILE, 'rb') as f:
+                data = pickle.load(f)
+            logger.info(f"✅ Loaded persistent data: {data['lifetime_transfers']} lifetime transfers")
+            return data
+    except Exception as e:
+        logger.warning(f"⚠️ Could not load persistent data: {e}")
+    
+    # Return default data if file doesn't exist or error
+    return {
+        'lifetime_generated': 0.0,
+        'lifetime_transfers': 0,
+        'lifetime_successful_transfers': 0,
+        'lifetime_errors': 0,
+        'lifetime_payid_withdrawals': 0,
+        'lifetime_payid_amount': 0.0,
+        'best_hour_rate': 0.0,
+        'system_start_date': datetime.now().strftime('%Y-%m-%d'),
+        'daily_targets_hit': 0,
+        'total_uptime_hours': 0.0
+    }
+
+def save_persistent_data():
+    """Save automation data to file"""
+    try:
+        persistent_data = {
+            'lifetime_generated': automation_stats['lifetime_generated'],
+            'lifetime_transfers': automation_stats['lifetime_transfers'],
+            'lifetime_successful_transfers': automation_stats['lifetime_successful_transfers'],
+            'lifetime_errors': automation_stats['lifetime_errors'],
+            'lifetime_payid_withdrawals': automation_stats['lifetime_payid_withdrawals'],
+            'lifetime_payid_amount': automation_stats['lifetime_payid_amount'],
+            'best_hour_rate': automation_stats['best_hour_rate'],
+            'system_start_date': persistent_data.get('system_start_date', datetime.now().strftime('%Y-%m-%d')),
+            'daily_targets_hit': persistent_data.get('daily_targets_hit', 0),
+            'total_uptime_hours': persistent_data.get('total_uptime_hours', 0.0) + automation_stats.get('total_runtime_hours', 0.0),
+            'last_save': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        with open(DATA_FILE, 'wb') as f:
+            pickle.dump(persistent_data, f)
+        
+    except Exception as e:
+        logger.error(f"❌ Could not save persistent data: {e}")
+
+# Load persistent data
+persistent_data = load_persistent_data()
 
 # Global automation state with lifetime tracking
 automation_active = False
@@ -34,17 +89,17 @@ automation_stats = {
     'status': 'Stopped',
     'errors': 0,
     'successful_transfers': 0,
-    # Lifetime statistics
-    'lifetime_generated': 0.0,
-    'lifetime_transfers': 0,
-    'lifetime_successful_transfers': 0,
-    'lifetime_errors': 0,
-    'lifetime_payid_withdrawals': 0,
-    'lifetime_payid_amount': 0.0,
+    # Lifetime statistics (loaded from persistent data)
+    'lifetime_generated': persistent_data['lifetime_generated'],
+    'lifetime_transfers': persistent_data['lifetime_transfers'],
+    'lifetime_successful_transfers': persistent_data['lifetime_successful_transfers'],
+    'lifetime_errors': persistent_data['lifetime_errors'],
+    'lifetime_payid_withdrawals': persistent_data['lifetime_payid_withdrawals'],
+    'lifetime_payid_amount': persistent_data['lifetime_payid_amount'],
     'session_start_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
     'total_cycles': 0,
     'avg_profit_per_transfer': 0.0,
-    'best_hour_rate': 0.0,
+    'best_hour_rate': persistent_data['best_hour_rate'],
     'total_runtime_hours': 0.0
 }
 
@@ -139,6 +194,10 @@ class UpBankAutomation:
             # Calculate average profit per transfer
             if automation_stats['lifetime_successful_transfers'] > 0:
                 automation_stats['avg_profit_per_transfer'] = automation_stats['lifetime_generated'] / automation_stats['lifetime_successful_transfers']
+            
+            # Save data every 10 transfers
+            if automation_stats['lifetime_transfers'] % 10 == 0:
+                save_persistent_data()
             
             # Adaptive success rate (occasionally simulate minor failures for realism)
             success_rate = 0.95  # 95% success rate
@@ -325,7 +384,7 @@ def dashboard():
 
 @app.route('/api/stats')
 def get_stats():
-    """API endpoint for real-time stats - Fixed to always return JSON"""
+    """API endpoint for real-time stats - Always returns JSON"""
     try:
         # Calculate success rate
         success_rate = 0
@@ -342,33 +401,63 @@ def get_stats():
         if automation_stats['total_runtime_hours'] > 0:
             current_hourly_rate = automation_stats['total_generated'] / automation_stats['total_runtime_hours']
         
-        # Add calculated fields
-        stats = automation_stats.copy()
-        stats['success_rate'] = round(success_rate, 1)
-        stats['lifetime_success_rate'] = round(lifetime_success_rate, 1)
-        stats['current_hourly_rate'] = round(current_hourly_rate, 2)
+        # Calculate next withdrawal amount
+        next_withdrawal_needed = max(0, 30 - automation_stats['total_generated'])
         
-        # Calculate daily progress percentage
-        daily_progress = (stats['total_generated'] / stats['daily_target']) * 100
-        stats['daily_progress_percent'] = round(daily_progress, 1)
+        # Build complete stats response
+        response_data = {
+            # Session stats
+            'total_generated': round(automation_stats['total_generated'], 2),
+            'current_balance': round(automation_stats['current_balance'], 2),
+            'current_hourly_rate': round(current_hourly_rate, 2),
+            'total_transfers': automation_stats['total_transfers'],
+            'successful_transfers': automation_stats['successful_transfers'],
+            'errors': automation_stats['errors'],
+            'total_cycles': automation_stats['total_cycles'],
+            'success_rate': round(success_rate, 1),
+            'total_runtime_hours': round(automation_stats['total_runtime_hours'], 1),
+            
+            # Lifetime stats
+            'lifetime_generated': round(automation_stats['lifetime_generated'], 2),
+            'lifetime_transfers': automation_stats['lifetime_transfers'],
+            'lifetime_successful_transfers': automation_stats['lifetime_successful_transfers'],
+            'lifetime_errors': automation_stats['lifetime_errors'],
+            'lifetime_payid_withdrawals': automation_stats['lifetime_payid_withdrawals'],
+            'lifetime_payid_amount': round(automation_stats['lifetime_payid_amount'], 2),
+            'avg_profit_per_transfer': round(automation_stats['avg_profit_per_transfer'], 3),
+            'best_hour_rate': round(automation_stats['best_hour_rate'], 2),
+            
+            # System info
+            'status': automation_stats['status'],
+            'start_time': automation_stats['start_time'],
+            'last_activity': automation_stats['last_activity'],
+            'session_start_time': automation_stats['session_start_time'],
+            'daily_target': automation_stats['daily_target'],
+            'daily_progress_percent': round((automation_stats['total_generated'] / automation_stats['daily_target']) * 100, 1),
+            'next_withdrawal_needed': round(next_withdrawal_needed, 2)
+        }
         
-        return jsonify(stats)
+        return jsonify(response_data), 200, {'Content-Type': 'application/json'}
         
     except Exception as e:
         logger.error(f"❌ Stats API error: {e}")
         # Always return JSON even on error
-        return jsonify({
+        error_response = {
             'status': 'Error',
             'error': str(e),
             'total_generated': 0.0,
-            'total_transfers': 0,
             'current_balance': 0.0,
-            'daily_target': 280.0,
-            'errors': 1,
+            'current_hourly_rate': 0.0,
+            'total_transfers': 0,
             'successful_transfers': 0,
+            'errors': 1,
+            'lifetime_generated': automation_stats.get('lifetime_generated', 0.0),
+            'lifetime_transfers': automation_stats.get('lifetime_transfers', 0),
             'success_rate': 0,
-            'daily_progress_percent': 0
-        })
+            'daily_progress_percent': 0,
+            'next_withdrawal_needed': 30.0
+        }
+        return jsonify(error_response), 500, {'Content-Type': 'application/json'}
 
 @app.route('/api/start', methods=['POST'])
 def start_automation():
@@ -426,6 +515,7 @@ def check_funds_and_auto_start():
 
 if __name__ == '__main__':
     logger.info("🎯 N.E.R.D. System Initializing...")
+    logger.info(f"📊 Loaded lifetime stats: {automation_stats['lifetime_transfers']} transfers, ${automation_stats['lifetime_generated']:.2f} generated")
     logger.info("💡 Auto-detecting funds and starting automation...")
     
     # Auto-start if funds detected
@@ -434,6 +524,12 @@ if __name__ == '__main__':
     else:
         logger.info("⏳ Waiting for sufficient funds...")
     
-    # Start Flask dashboard
-    logger.info("🌐 Starting dashboard on http://0.0.0.0:5000")
-    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
+    try:
+        # Start Flask dashboard
+        logger.info("🌐 Starting dashboard on http://0.0.0.0:5000")
+        app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
+    except KeyboardInterrupt:
+        logger.info("🛑 Shutting down...")
+        automation_active = False
+        save_persistent_data()
+        logger.info("💾 Data saved successfully")
