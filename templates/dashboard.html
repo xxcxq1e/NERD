@@ -1,326 +1,39 @@
 
 <!DOCTYPE html>
-<html>
-<head>
-    <title>Up Bank Automation Dashboard</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        @keyframes neonGlow {
-            0%, 100% { box-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff, 0 0 15px #00ffff; }
-            50% { box-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff; }
-        }
-        @keyframes textGlow {
-            0%, 100% { text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff; }
-            50% { text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #ff00ff; }
-        }
-        @keyframes borderPulse {
-            0%, 100% { border-color: #00ff00; box-shadow: 0 0 3px #00ff00; }
-            50% { border-color: #00ffff; box-shadow: 0 0 8px #00ffff; }
-        }
-        body { 
-            font-family: Arial, sans-serif; 
-            margin: 12px; 
-            background: #0a0a0a; 
-            color: #ffffff;
-            overflow-x: hidden;
-        }
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: 
-                radial-gradient(circle at 20% 30%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 70%, rgba(255, 0, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 80%, rgba(0, 255, 0, 0.05) 0%, transparent 50%);
-            pointer-events: none;
-            z-index: -1;
-        }
-        .container { 
-            max-width: 720px; 
-            margin: 0 auto; 
-        }
-        .card { 
-            background: rgba(64, 64, 64, 0.9); 
-            padding: 12px; 
-            margin: 6px 0; 
-            border-radius: 8px; 
-            border: 1px solid #00ffff;
-            animation: neonGlow 3s ease-in-out infinite;
-            backdrop-filter: blur(5px);
-        }
-        .status { 
-            font-size: 14px; 
-            font-weight: bold; 
-            margin-bottom: 6px;
-            text-shadow: 0 0 5px currentColor;
-        }
-        .running { 
-            color: #00ff00; 
-            text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00;
-        }
-        .stopped { 
-            color: #ff0040; 
-            text-shadow: 0 0 10px #ff0040, 0 0 20px #ff0040;
-        }
-        .break { 
-            color: #ffff00; 
-            text-shadow: 0 0 10px #ffff00, 0 0 20px #ffff00;
-        }
-        .starting { 
-            color: #00ffff; 
-            text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
-        }
-        .stats { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); 
-            gap: 9px; 
-        }
-        .stat { 
-            text-align: center; 
-            border: 1px solid #ff00ff;
-            border-radius: 5px;
-            padding: 6px;
-            animation: borderPulse 2s ease-in-out infinite;
-            background: rgba(255, 0, 255, 0.1);
-        }
-        .stat-value { 
-            font-size: 17px; 
-            font-weight: bold; 
-            color: #00ffff;
-            text-shadow: 0 0 8px #00ffff;
-        }
-        .stat-label { 
-            color: #ff00ff; 
-            font-size: 8px;
-            text-shadow: 0 0 5px #ff00ff;
-        }
-        .progress-bar { 
-            width: 100%; 
-            height: 12px; 
-            background: #222; 
-            border-radius: 6px; 
-            overflow: hidden;
-            border: 1px solid #00ff00;
-            box-shadow: 0 0 5px #00ff00;
-        }
-        .progress-fill { 
-            height: 100%; 
-            background: linear-gradient(90deg, #00ff00, #00ffff, #00ff00);
-            background-size: 200% 100%;
-            animation: progressGlow 2s linear infinite;
-            transition: width 0.3s;
-            box-shadow: 0 0 10px #00ff00;
-        }
-        @keyframes progressGlow {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-        h1 { 
-            color: #00ffff; 
-            text-align: center; 
-            font-size: 20px; 
-            margin: 12px 0;
-            animation: textGlow 2s ease-in-out infinite;
-            letter-spacing: 3px;
-            font-weight: bold;
-        }
-        h3 { 
-            color: #ff00ff; 
-            margin-bottom: 9px; 
-            font-size: 14px;
-            text-shadow: 0 0 8px #ff00ff;
-            border-bottom: 1px solid #ff00ff;
-            padding-bottom: 3px;
-        }
-        .info-row { 
-            display: flex; 
-            justify-content: space-between; 
-            margin: 3px 0; 
-            color: #00ff00;
-            font-size: 12px;
-            padding: 2px 6px;
-            border-radius: 3px;
-            background: rgba(0, 255, 0, 0.05);
-            text-shadow: 0 0 3px #00ff00;
-        }
-        .auto-notice {
-            background: rgba(0, 255, 0, 0.15);
-            color: #00ff00;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-            margin-bottom: 12px;
-            border: 1px solid #00ff00;
-            font-size: 13px;
-            font-weight: bold;
-            text-shadow: 0 0 5px #00ff00;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>N.E.R.D.</h1>
-        
-        <div class="auto-notice">
-            ✅ System configured with pre-set credentials<br>
-            🚀 Auto-monitoring for funds - will start when balance ≥ $10
-        </div>
-
-        <div class="card">
-            <div class="status" id="status">Status: Loading...</div>
-            <div class="info-row">
-                <span>Last Action:</span>
-                <span id="lastAction">None</span>
-            </div>
-            <div class="info-row">
-                <span>Current IP:</span>
-                <span id="currentIp">Unknown</span>
-            </div>
-            <div class="info-row">
-                <span>Last Update:</span>
-                <span id="lastUpdate">Never</span>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>📊 Statistics</h3>
-            <div class="stats">
-                <div class="stat">
-                    <div class="stat-value" id="totalTransfers">0</div>
-                    <div class="stat-label">Total Transfers</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="totalAmount">$0.00</div>
-                    <div class="stat-label">Total Amount</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="balance">$0.00</div>
-                    <div class="stat-label">Balance</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="errors">0</div>
-                    <div class="stat-label">Errors</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>🎯 Daily Progress</h3>
-            <div class="progress-bar">
-                <div class="progress-fill" id="dailyProgressBar" style="width: 0%"></div>
-            </div>
-            <div style="text-align: center; margin-top: 6px; color: #ccc; font-size: 10px;">
-                <span id="dailyProgress">$0.00</span> / <span id="dailyTarget">$280.00</span>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>📅 Schedule Info</h3>
-            <div class="info-row">
-                <span>Segment End:</span>
-                <span id="segmentEnd">Not scheduled</span>
-            </div>
-            <div class="info-row">
-                <span>Segment Count:</span>
-                <span id="segmentCount">0</span>
-            </div>
-            <div class="info-row">
-                <span>IP Rotations Today:</span>
-                <span id="ipRotationsToday">0</span>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>💸 PayID Withdrawals</h3>
-            <div class="info-row">
-                <span>Today's Withdrawals:</span>
-                <span id="payidWithdrawalsToday">0/3</span>
-            </div>
-            <div class="info-row">
-                <span>Total PayID Amount:</span>
-                <span id="totalPayidAmount">$0.00</span>
-            </div>
-            <div class="info-row">
-                <span>Last Withdrawal:</span>
-                <span id="lastPayidWithdrawal">None</span>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        function updateStats() {
-            fetch('/api/stats')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('status').textContent = `Status: ${data.status}`;
-                    document.getElementById('status').className = `status ${data.status.toLowerCase()}`;
-                    document.getElementById('lastAction').textContent = data.last_action;
-                    document.getElementById('currentIp').textContent = data.current_ip;
-                    document.getElementById('lastUpdate').textContent = data.last_update;
-
-                    document.getElementById('totalTransfers').textContent = data.total_transfers;
-                    document.getElementById('totalAmount').textContent = `$${data.total_amount.toFixed(2)}`;
-                    document.getElementById('balance').textContent = `$${data.balance.toFixed(2)}`;
-                    document.getElementById('errors').textContent = data.errors;
-
-                    document.getElementById('dailyProgress').textContent = `$${data.daily_progress.toFixed(2)}`;
-                    document.getElementById('dailyTarget').textContent = `$${data.daily_target.toFixed(2)}`;
-
-                    const progressPercent = (data.daily_progress / data.daily_target) * 100;
-                    document.getElementById('dailyProgressBar').style.width = `${Math.min(progressPercent, 100)}%`;
-
-                    document.getElementById('segmentEnd').textContent = data.segment_end || 'Not scheduled';
-                    document.getElementById('segmentCount').textContent = data.segment_count;
-                    document.getElementById('ipRotationsToday').textContent = data.ip_rotations_today;
-
-                    // PayID withdrawal stats
-                    document.getElementById('payidWithdrawalsToday').textContent = `${data.payid_withdrawals_today || 0}/3`;
-                    document.getElementById('totalPayidAmount').textContent = `$${(data.total_payid_amount || 0).toFixed(2)}`;
-                    document.getElementById('lastPayidWithdrawal').textContent = data.last_payid_withdrawal || 'None';
-                })
-                .catch(error => {
-                    console.error('Failed to fetch stats:', error);
-                });
-        }
-
-        // Update stats every 10 seconds
-        setInterval(updateStats, 10000);
-        updateStats(); // Initial load
-    </script>
-</body>
-</html>
-<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Up Bank Automation Dashboard</title>
+    <title>N.E.R.D. Automation Dashboard - LIFETIME EDITION</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0a;
-            color: #ffffff;
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #00ff00;
             min-height: 100vh;
-            padding: 20px;
+            padding: 10px;
+            overflow-x: auto;
         }
         .header {
             text-align: center;
-            margin-bottom: 30px;
-            padding: 20px 0;
-            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-            border-radius: 12px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #001100, #003300);
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            box-shadow: 0 0 20px #00ff00;
         }
         .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            background: linear-gradient(45deg, #fbbf24, #f59e0b);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-size: 2rem;
+            margin-bottom: 8px;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
         .status-badge {
             display: inline-block;
@@ -329,143 +42,177 @@
             font-weight: bold;
             text-transform: uppercase;
             font-size: 0.9rem;
+            border: 1px solid;
         }
-        .status-running { background: #10b981; }
-        .status-stopped { background: #ef4444; }
+        .status-running { 
+            background: #004400; 
+            color: #00ff00; 
+            border-color: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+        .status-stopped { 
+            background: #440000; 
+            color: #ff0000; 
+            border-color: #ff0000;
+            box-shadow: 0 0 10px #ff0000;
+        }
         .dashboard {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            max-width: 1200px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            max-width: 1400px;
             margin: 0 auto;
         }
         .card {
-            background: linear-gradient(135deg, #1f2937, #374151);
-            border-radius: 12px;
-            padding: 24px;
-            border: 1px solid #4b5563;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #001100, #002200);
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #00ff00;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
         }
         .card h3 {
-            color: #f3f4f6;
-            margin-bottom: 16px;
-            font-size: 1.2rem;
+            color: #00ff00;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
             display: flex;
             align-items: center;
             gap: 8px;
+            text-shadow: 0 0 5px #00ff00;
         }
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
+            gap: 10px;
         }
         .stat-item {
             text-align: center;
-            padding: 12px;
-            background: rgba(59, 130, 246, 0.1);
-            border-radius: 8px;
-            border: 1px solid rgba(59, 130, 246, 0.2);
+            padding: 8px;
+            background: rgba(0, 255, 0, 0.1);
+            border-radius: 6px;
+            border: 1px solid rgba(0, 255, 0, 0.3);
         }
         .stat-value {
-            font-size: 1.8rem;
+            font-size: 1.4rem;
             font-weight: bold;
-            color: #3b82f6;
-            margin-bottom: 4px;
+            color: #00ff00;
+            margin-bottom: 2px;
+            text-shadow: 0 0 8px #00ff00;
         }
         .stat-label {
-            font-size: 0.9rem;
-            color: #9ca3af;
+            font-size: 0.7rem;
+            color: #00aa00;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
+        .money-flow {
+            font-size: 1.8rem;
+            text-align: center;
+            color: #00ff00;
+            font-weight: bold;
+            text-shadow: 0 0 15px #00ff00;
+            animation: glow 3s ease-in-out infinite alternate;
+        }
+        @keyframes glow {
+            from { text-shadow: 0 0 15px #00ff00; }
+            to { text-shadow: 0 0 25px #00ff00, 0 0 35px #00ff00; }
+        }
         .progress-bar {
             width: 100%;
-            height: 20px;
-            background: #374151;
-            border-radius: 10px;
+            height: 16px;
+            background: #002200;
+            border-radius: 8px;
             overflow: hidden;
-            margin: 16px 0;
+            margin: 12px 0;
+            border: 1px solid #00ff00;
         }
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #10b981, #34d399);
-            transition: width 0.3s ease;
-            border-radius: 10px;
+            background: linear-gradient(90deg, #00ff00, #44ff44, #00ff00);
+            transition: width 0.5s ease;
+            border-radius: 8px;
+            box-shadow: 0 0 10px #00ff00;
         }
         .info-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #374151;
+            padding: 6px 0;
+            border-bottom: 1px solid #004400;
+            font-size: 0.9rem;
         }
         .info-row:last-child { border-bottom: none; }
         .controls {
             display: flex;
-            gap: 12px;
-            margin-top: 20px;
+            gap: 10px;
+            margin-top: 15px;
         }
         .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
+            padding: 10px 20px;
+            border: 1px solid #00ff00;
+            border-radius: 6px;
             font-weight: bold;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s;
             flex: 1;
-        }
-        .btn-start {
-            background: #10b981;
-            color: white;
-        }
-        .btn-stop {
-            background: #ef4444;
-            color: white;
+            background: #001100;
+            color: #00ff00;
+            font-family: inherit;
         }
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            background: #003300;
+            box-shadow: 0 0 15px #00ff00;
+            transform: translateY(-1px);
         }
         .live-indicator {
             display: inline-block;
             width: 8px;
             height: 8px;
-            background: #10b981;
+            background: #00ff00;
             border-radius: 50%;
-            animation: pulse 2s infinite;
+            animation: blink 1s infinite;
             margin-right: 8px;
         }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
         }
-        .money-flow {
-            font-size: 2rem;
+        .lifetime-stats {
+            background: linear-gradient(135deg, #002200, #003300);
+            border: 2px solid #00ff00;
+        }
+        .update-time {
             text-align: center;
-            color: #10b981;
-            font-weight: bold;
-            text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+            font-size: 0.8rem;
+            color: #00aa00;
+            margin-top: 10px;
+        }
+        .error-count {
+            color: #ff4444;
+            text-shadow: 0 0 5px #ff4444;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>💰 N.E.R.D. AUTOMATION SYSTEM</h1>
+        <h1>💰 N.E.R.D. AUTOMATION SYSTEM - LIFETIME EDITION</h1>
         <div class="status-badge" id="statusBadge">
             <span class="live-indicator"></span>
             <span id="statusText">INITIALIZING</span>
         </div>
+        <div class="update-time">
+            Last Update: <span id="lastUpdate">Never</span>
+        </div>
     </div>
 
     <div class="dashboard">
+        <!-- Current Session -->
         <div class="card">
-            <h3>💵 Financial Overview</h3>
+            <h3>💵 Current Session</h3>
             <div class="money-flow" id="totalGenerated">$0.00</div>
-            <div style="text-align: center; color: #9ca3af; margin-top: 8px;">
-                Total Generated Today
+            <div style="text-align: center; color: #00aa00; margin-top: 6px; font-size: 0.9rem;">
+                Generated This Session
             </div>
-            <div class="stats-grid" style="margin-top: 20px;">
+            <div class="stats-grid" style="margin-top: 15px;">
                 <div class="stat-item">
                     <div class="stat-value" id="currentBalance">$0.00</div>
                     <div class="stat-label">Current Balance</div>
@@ -477,41 +224,98 @@
             </div>
         </div>
 
+        <!-- Lifetime Statistics -->
+        <div class="card lifetime-stats">
+            <h3>🏆 LIFETIME TOTALS</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="lifetimeGenerated">$0.00</div>
+                    <div class="stat-label">Total Generated</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="lifetimeTransfers">0</div>
+                    <div class="stat-label">Total Transfers</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="avgProfitPerTransfer">$0.00</div>
+                    <div class="stat-label">Avg Per Transfer</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="bestHourRate">$0.00</div>
+                    <div class="stat-label">Best Hour Rate</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Stats -->
         <div class="card">
-            <h3>📊 Activity Stats</h3>
+            <h3>📊 Session Activity</h3>
             <div class="stats-grid">
                 <div class="stat-item">
                     <div class="stat-value" id="totalTransfers">0</div>
-                    <div class="stat-label">Total Transfers</div>
+                    <div class="stat-label">Transfers</div>
                 </div>
                 <div class="stat-item">
                     <div class="stat-value" id="successfulTransfers">0</div>
                     <div class="stat-label">Successful</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value" id="errors">0</div>
-                    <div class="stat-label">Errors</div>
+                    <div class="stat-value" id="totalCycles">0</div>
+                    <div class="stat-label">Cycles</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value" id="successRate">0%</div>
-                    <div class="stat-label">Success Rate</div>
+                    <div class="stat-value error-count" id="errors">0</div>
+                    <div class="stat-label">Errors</div>
                 </div>
+            </div>
+            <div class="info-row" style="margin-top: 10px;">
+                <span>Success Rate:</span>
+                <span id="successRate">0%</span>
+            </div>
+            <div class="info-row">
+                <span>Runtime:</span>
+                <span id="runtimeHours">0.0h</span>
             </div>
         </div>
 
+        <!-- PayID Withdrawals -->
+        <div class="card">
+            <h3>💸 PayID Withdrawals</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="lifetimeWithdrawals">0</div>
+                    <div class="stat-label">Total Count</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="lifetimeWithdrawnAmount">$0.00</div>
+                    <div class="stat-label">Total Amount</div>
+                </div>
+            </div>
+            <div class="info-row" style="margin-top: 10px;">
+                <span>PayID Address:</span>
+                <span>0459616005</span>
+            </div>
+            <div class="info-row">
+                <span>Next Withdrawal:</span>
+                <span id="nextWithdrawal">$30.00</span>
+            </div>
+        </div>
+
+        <!-- Daily Progress -->
         <div class="card">
             <h3>🎯 Daily Progress</h3>
             <div class="progress-bar">
                 <div class="progress-fill" id="dailyProgressBar" style="width: 0%"></div>
             </div>
-            <div style="text-align: center; margin-top: 12px; color: #ccc;">
+            <div style="text-align: center; margin-top: 8px; color: #00aa00; font-size: 0.9rem;">
                 <span id="dailyProgress">$0.00</span> / <span id="dailyTarget">$280.00</span>
                 (<span id="dailyPercent">0.0%</span>)
             </div>
         </div>
 
+        <!-- System Status -->
         <div class="card">
-            <h3>⏰ System Status</h3>
+            <h3>⚡ System Control</h3>
             <div class="info-row">
                 <span>Started:</span>
                 <span id="startTime">Not started</span>
@@ -521,44 +325,67 @@
                 <span id="lastActivity">None</span>
             </div>
             <div class="info-row">
-                <span>PayID Address:</span>
-                <span id="payidAddress">0459616005</span>
+                <span>Session Started:</span>
+                <span id="sessionStart">Loading...</span>
             </div>
             <div class="controls">
-                <button class="btn btn-start" onclick="startAutomation()">🚀 START</button>
-                <button class="btn btn-stop" onclick="stopAutomation()">🛑 STOP</button>
+                <button class="btn" onclick="startAutomation()">🚀 START</button>
+                <button class="btn" onclick="stopAutomation()">🛑 STOP</button>
             </div>
         </div>
     </div>
 
     <script>
-        let statsData = {};
+        let updateInterval;
+        let lastUpdateTime = 0;
+
+        function formatTime(dateString) {
+            if (!dateString) return 'Never';
+            try {
+                return new Date(dateString).toLocaleTimeString();
+            } catch {
+                return dateString;
+            }
+        }
 
         function updateDashboard(data) {
-            statsData = data;
+            console.log('Dashboard update:', data);
             
-            // Financial overview
+            // Handle error responses
+            if (data.error) {
+                document.getElementById('statusText').textContent = 'CONNECTION ERROR';
+                return;
+            }
+            
+            // Current session financial overview
             document.getElementById('totalGenerated').textContent = '$' + (data.total_generated || 0).toFixed(2);
             document.getElementById('currentBalance').textContent = '$' + (data.current_balance || 0).toFixed(2);
+            document.getElementById('hourlyRate').textContent = '$' + (data.current_hourly_rate || 0).toFixed(2);
             
-            // Calculate hourly rate
-            if (data.start_time) {
-                const startTime = new Date(data.start_time);
-                const now = new Date();
-                const hoursElapsed = Math.max((now - startTime) / (1000 * 60 * 60), 0.1);
-                const hourlyRate = (data.total_generated || 0) / hoursElapsed;
-                document.getElementById('hourlyRate').textContent = '$' + hourlyRate.toFixed(2);
-            }
+            // Lifetime statistics
+            document.getElementById('lifetimeGenerated').textContent = '$' + (data.lifetime_generated || 0).toFixed(2);
+            document.getElementById('lifetimeTransfers').textContent = data.lifetime_transfers || 0;
+            document.getElementById('avgProfitPerTransfer').textContent = '$' + (data.avg_profit_per_transfer || 0).toFixed(3);
+            document.getElementById('bestHourRate').textContent = '$' + (data.best_hour_rate || 0).toFixed(2);
             
             // Activity stats
             document.getElementById('totalTransfers').textContent = data.total_transfers || 0;
             document.getElementById('successfulTransfers').textContent = data.successful_transfers || 0;
+            document.getElementById('totalCycles').textContent = data.total_cycles || 0;
             document.getElementById('errors').textContent = data.errors || 0;
+            document.getElementById('runtimeHours').textContent = (data.total_runtime_hours || 0).toFixed(1) + 'h';
             
             // Success rate
-            const successRate = data.total_transfers > 0 ? 
-                ((data.successful_transfers || 0) / data.total_transfers * 100).toFixed(1) : 0;
-            document.getElementById('successRate').textContent = successRate + '%';
+            document.getElementById('successRate').textContent = (data.success_rate || 0).toFixed(1) + '%';
+            
+            // PayID withdrawals
+            document.getElementById('lifetimeWithdrawals').textContent = data.lifetime_payid_withdrawals || 0;
+            document.getElementById('lifetimeWithdrawnAmount').textContent = '$' + (data.lifetime_payid_amount || 0).toFixed(2);
+            
+            // Calculate next withdrawal amount
+            const currentGenerated = data.total_generated || 0;
+            const nextWithdrawal = Math.max(0, 30 - currentGenerated);
+            document.getElementById('nextWithdrawal').textContent = '$' + nextWithdrawal.toFixed(2) + ' to go';
             
             // Daily progress
             const dailyProgress = ((data.total_generated || 0) / (data.daily_target || 280)) * 100;
@@ -566,7 +393,7 @@
             document.getElementById('dailyProgress').textContent = '$' + (data.total_generated || 0).toFixed(2);
             document.getElementById('dailyPercent').textContent = dailyProgress.toFixed(1) + '%';
             
-            // Status
+            // System status
             const statusBadge = document.getElementById('statusBadge');
             const statusText = document.getElementById('statusText');
             
@@ -579,18 +406,30 @@
             }
             
             // System info
-            document.getElementById('startTime').textContent = data.start_time || 'Not started';
-            document.getElementById('lastActivity').textContent = data.last_activity || 'None';
+            document.getElementById('startTime').textContent = formatTime(data.start_time);
+            document.getElementById('lastActivity').textContent = formatTime(data.last_activity);
+            document.getElementById('sessionStart').textContent = formatTime(data.session_start_time);
+            
+            // Update last update time
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+            lastUpdateTime = Date.now();
         }
 
         function fetchStats() {
             fetch('/api/stats')
-                .then(response => response.json())
-                .then(data => updateDashboard(data))
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    updateDashboard(data);
+                })
                 .catch(error => {
-                    console.log('Failed to fetch stats:', error);
-                    // Show offline status
+                    console.log('Stats fetch error:', error);
                     document.getElementById('statusText').textContent = 'CONNECTION ERROR';
+                    document.getElementById('lastUpdate').textContent = 'Error: ' + error.message;
                 });
         }
 
@@ -599,7 +438,7 @@
                 .then(response => response.json())
                 .then(data => {
                     console.log('Start response:', data);
-                    fetchStats();
+                    setTimeout(fetchStats, 1000); // Refresh after 1 second
                 })
                 .catch(error => console.error('Start error:', error));
         }
@@ -609,16 +448,34 @@
                 .then(response => response.json())
                 .then(data => {
                     console.log('Stop response:', data);
-                    fetchStats();
+                    setTimeout(fetchStats, 1000); // Refresh after 1 second
                 })
                 .catch(error => console.error('Stop error:', error));
         }
 
-        // Update every 10 seconds
-        setInterval(fetchStats, 10000);
+        // Start real-time updates
+        function startRealTimeUpdates() {
+            // Clear any existing interval
+            if (updateInterval) {
+                clearInterval(updateInterval);
+            }
+            
+            // Initial fetch
+            fetchStats();
+            
+            // Update every 5 seconds for real-time feel
+            updateInterval = setInterval(fetchStats, 5000);
+        }
+
+        // Initialize dashboard
+        startRealTimeUpdates();
         
-        // Initial load
-        fetchStats();
+        // Restart updates if page becomes visible again
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                startRealTimeUpdates();
+            }
+        });
     </script>
 </body>
 </html>

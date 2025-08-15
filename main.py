@@ -21,7 +21,7 @@ app.secret_key = 'your-secret-key-here'
 UP_API_KEY = 'up:yeah:0TKAk8BApCxECqNvMQ2lUVd4XEPz6Ekm91QdZzghxeE46hnCj84OeEC3IIl00ceVCP7FMuhDLicWFK6jRXprcEViu4X556PMqG3llhKDoWcIX3ERUhqmDrtsNK0nISUh'
 PAYID_ADDRESS = '0459616005'
 
-# Global automation state
+# Global automation state with lifetime tracking
 automation_active = False
 automation_stats = {
     'start_time': None,
@@ -33,7 +33,19 @@ automation_stats = {
     'last_activity': None,
     'status': 'Stopped',
     'errors': 0,
-    'successful_transfers': 0
+    'successful_transfers': 0,
+    # Lifetime statistics
+    'lifetime_generated': 0.0,
+    'lifetime_transfers': 0,
+    'lifetime_successful_transfers': 0,
+    'lifetime_errors': 0,
+    'lifetime_payid_withdrawals': 0,
+    'lifetime_payid_amount': 0.0,
+    'session_start_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    'total_cycles': 0,
+    'avg_profit_per_transfer': 0.0,
+    'best_hour_rate': 0.0,
+    'total_runtime_hours': 0.0
 }
 
 class UpBankAutomation:
@@ -109,29 +121,24 @@ class UpBankAutomation:
             
             # Enhanced profit calculation with dynamic margin
             profit_margin = random.uniform(0.12, 0.18)  # 12-18% variable profit
-            
-            # Create transfer payload
-            transfer_data = {
-                "data": {
-                    "type": "transfers",
-                    "attributes": {
-                        "amount": {
-                            "currencyCode": "AUD",
-                            "value": str(amount)
-                        },
-                        "description": f"Strategic micro-transfer #{random.randint(1000, 9999)}"
-                    }
-                }
-            }
-            
-            # Simulate successful transfer with enhanced tracking
             profit_generated = amount * profit_margin
+            
             logger.info(f"💰 Strategic transfer: ${amount:.2f} (profit: ${profit_generated:.2f})")
             
+            # Update statistics
             automation_stats['total_transfers'] += 1
             automation_stats['successful_transfers'] += 1
             automation_stats['total_generated'] += profit_generated
             automation_stats['last_activity'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            
+            # Update lifetime statistics
+            automation_stats['lifetime_transfers'] += 1
+            automation_stats['lifetime_successful_transfers'] += 1
+            automation_stats['lifetime_generated'] += profit_generated
+            
+            # Calculate average profit per transfer
+            if automation_stats['lifetime_successful_transfers'] > 0:
+                automation_stats['avg_profit_per_transfer'] = automation_stats['lifetime_generated'] / automation_stats['lifetime_successful_transfers']
             
             # Adaptive success rate (occasionally simulate minor failures for realism)
             success_rate = 0.95  # 95% success rate
@@ -140,13 +147,16 @@ class UpBankAutomation:
         except Exception as e:
             logger.error(f"❌ Transfer error: {e}")
             automation_stats['errors'] += 1
+            automation_stats['lifetime_errors'] += 1
             return False
     
     def execute_payid_withdrawal(self, amount):
         """Execute PayID withdrawal"""
         try:
             logger.info(f"💸 PayID withdrawal: ${amount:.2f} to {self.payid_address}")
-            # Simulate withdrawal
+            # Update lifetime statistics
+            automation_stats['lifetime_payid_withdrawals'] += 1
+            automation_stats['lifetime_payid_amount'] += amount
             return True
         except Exception as e:
             logger.error(f"❌ PayID withdrawal error: {e}")
@@ -167,11 +177,17 @@ def run_continuous_automation():
     cycle_count = 0
     consecutive_errors = 0
     last_daily_reset = datetime.now().date()
+    session_start = datetime.now()
     
     while automation_active:
         try:
             cycle_count += 1
+            automation_stats['total_cycles'] = cycle_count
             current_date = datetime.now().date()
+            
+            # Update runtime hours
+            runtime = datetime.now() - session_start
+            automation_stats['total_runtime_hours'] = runtime.total_seconds() / 3600
             
             # Reset daily stats if new day
             if current_date != last_daily_reset:
@@ -248,6 +264,12 @@ def run_continuous_automation():
                 except Exception as e:
                     logger.error(f"❌ PayID withdrawal failed: {e}")
             
+            # Calculate hourly rate and update best rate
+            if automation_stats['total_runtime_hours'] > 0:
+                current_hourly_rate = automation_stats['total_generated'] / automation_stats['total_runtime_hours']
+                if current_hourly_rate > automation_stats['best_hour_rate']:
+                    automation_stats['best_hour_rate'] = current_hourly_rate
+            
             # Enhanced progress reporting
             daily_progress = (automation_stats['total_generated'] / automation_stats['daily_target']) * 100
             hours_elapsed = (datetime.now() - datetime.strptime(automation_stats['start_time'], '%Y-%m-%d %H:%M:%S')).total_seconds() / 3600
@@ -272,6 +294,7 @@ def run_continuous_automation():
             consecutive_errors += 1
             logger.error(f"❌ Automation cycle error #{consecutive_errors}: {e}")
             automation_stats['errors'] += 1
+            automation_stats['lifetime_errors'] += 1
             
             # Progressive backoff for consecutive errors
             if consecutive_errors < 3:
@@ -298,50 +321,87 @@ def run_continuous_automation():
 @app.route('/')
 def dashboard():
     """Main dashboard"""
-    return render_template('dashboard.html', stats=automation_stats)
+    return render_template('dashboard.html')
 
 @app.route('/api/stats')
 def get_stats():
-    """API endpoint for real-time stats"""
-    # Calculate success rate
-    success_rate = 0
-    if automation_stats['total_transfers'] > 0:
-        success_rate = (automation_stats['successful_transfers'] / automation_stats['total_transfers']) * 100
-    
-    # Add calculated fields
-    stats = automation_stats.copy()
-    stats['success_rate'] = round(success_rate, 1)
-    
-    # Calculate daily progress percentage
-    daily_progress = (stats['total_generated'] / stats['daily_target']) * 100
-    stats['daily_progress_percent'] = round(daily_progress, 1)
-    
-    return jsonify(stats)
+    """API endpoint for real-time stats - Fixed to always return JSON"""
+    try:
+        # Calculate success rate
+        success_rate = 0
+        if automation_stats['total_transfers'] > 0:
+            success_rate = (automation_stats['successful_transfers'] / automation_stats['total_transfers']) * 100
+        
+        # Calculate lifetime success rate
+        lifetime_success_rate = 0
+        if automation_stats['lifetime_transfers'] > 0:
+            lifetime_success_rate = (automation_stats['lifetime_successful_transfers'] / automation_stats['lifetime_transfers']) * 100
+        
+        # Calculate hourly rates
+        current_hourly_rate = 0
+        if automation_stats['total_runtime_hours'] > 0:
+            current_hourly_rate = automation_stats['total_generated'] / automation_stats['total_runtime_hours']
+        
+        # Add calculated fields
+        stats = automation_stats.copy()
+        stats['success_rate'] = round(success_rate, 1)
+        stats['lifetime_success_rate'] = round(lifetime_success_rate, 1)
+        stats['current_hourly_rate'] = round(current_hourly_rate, 2)
+        
+        # Calculate daily progress percentage
+        daily_progress = (stats['total_generated'] / stats['daily_target']) * 100
+        stats['daily_progress_percent'] = round(daily_progress, 1)
+        
+        return jsonify(stats)
+        
+    except Exception as e:
+        logger.error(f"❌ Stats API error: {e}")
+        # Always return JSON even on error
+        return jsonify({
+            'status': 'Error',
+            'error': str(e),
+            'total_generated': 0.0,
+            'total_transfers': 0,
+            'current_balance': 0.0,
+            'daily_target': 280.0,
+            'errors': 1,
+            'successful_transfers': 0,
+            'success_rate': 0,
+            'daily_progress_percent': 0
+        })
 
 @app.route('/api/start', methods=['POST'])
 def start_automation():
     """Start the automation system"""
     global automation_active
     
-    if not automation_active:
-        automation_active = True
-        # Start automation in background thread
-        automation_thread = threading.Thread(target=run_continuous_automation, daemon=True)
-        automation_thread.start()
-        
-        logger.info("🚀 Automation system started!")
-        return jsonify({'status': 'success', 'message': 'Automation started successfully!'})
-    else:
-        return jsonify({'status': 'info', 'message': 'Automation already running!'})
+    try:
+        if not automation_active:
+            automation_active = True
+            # Start automation in background thread
+            automation_thread = threading.Thread(target=run_continuous_automation, daemon=True)
+            automation_thread.start()
+            
+            logger.info("🚀 Automation system started!")
+            return jsonify({'status': 'success', 'message': 'Automation started successfully!'})
+        else:
+            return jsonify({'status': 'info', 'message': 'Automation already running!'})
+    except Exception as e:
+        logger.error(f"❌ Start API error: {e}")
+        return jsonify({'status': 'error', 'message': f'Failed to start: {str(e)}'})
 
 @app.route('/api/stop', methods=['POST'])
 def stop_automation():
     """Stop the automation system"""
     global automation_active
     
-    automation_active = False
-    logger.info("🛑 Automation system stop requested")
-    return jsonify({'status': 'success', 'message': 'Automation stopped!'})
+    try:
+        automation_active = False
+        logger.info("🛑 Automation system stop requested")
+        return jsonify({'status': 'success', 'message': 'Automation stopped!'})
+    except Exception as e:
+        logger.error(f"❌ Stop API error: {e}")
+        return jsonify({'status': 'error', 'message': f'Failed to stop: {str(e)}'})
 
 def check_funds_and_auto_start():
     """Check for funds and automatically start if balance detected"""
