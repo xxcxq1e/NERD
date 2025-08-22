@@ -242,10 +242,14 @@ class UpBankAutomation:
             logger.info(f"⚠️  Note: Up Bank API doesn't support automated account transfers - tracking only")
             
             # Simulate successful response for tracking purposes
-            response = type('MockResponse', (), {
-                'status_code': 201,
-                'json': lambda: {'data': {'id': f'sim_{datetime.now().strftime("%H%M%S")}'}}
-            })()
+            class MockResponse:
+                def __init__(self):
+                    self.status_code = 201
+                
+                def json(self):
+                    return {'data': {'id': f'sim_{datetime.now().strftime("%H%M%S")}'}}
+            
+            response = MockResponse()
             
             logger.info(f"📡 Transfer API Response: {response.status_code}")
             logger.info(f"📊 Transfer Request: ${amount:.2f} from {from_account_name} to {to_account_name}")
