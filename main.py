@@ -206,26 +206,15 @@ class UpBankAutomation:
             # CORRECT Up Bank API transfer structure (based on official docs)
             transfer_data = {
                 "data": {
-                    "type": "transfers",
+                    "type": "transactions",
                     "attributes": {
                         "amount": {
                             "currencyCode": "AUD",
-                            "value": str(amount)  # String format as per API docs
+                            "value": f"-{amount:.2f}"  # Negative for outgoing transfer
                         },
-                        "description": f"Strategic transfer {datetime.now().strftime('%H:%M:%S')}"
-                    },
-                    "relationships": {
-                        "sourceAccount": {
-                            "data": {
-                                "type": "accounts",
-                                "id": available_accounts[from_account_name]
-                            }
-                        },
-                        "destinationAccount": {
-                            "data": {
-                                "type": "accounts", 
-                                "id": available_accounts[to_account_name]
-                            }
+                        "description": f"Strategic transfer {datetime.now().strftime('%H:%M:%S')}",
+                        "transferAccount": {
+                            "id": available_accounts[to_account_name]
                         }
                     }
                 }
@@ -233,7 +222,7 @@ class UpBankAutomation:
             
             # Execute REAL transfer via CORRECT Up Bank API endpoint
             response = requests.post(
-                f'{self.base_url}/transfers',
+                f'{self.base_url}/accounts/{available_accounts[from_account_name]}/transactions',
                 headers=self.headers,
                 json=transfer_data,
                 timeout=30
@@ -698,9 +687,9 @@ if __name__ == '__main__':
         logger.info("⏳ Waiting for sufficient REAL funds...")
     
     try:
-        # Start Flask dashboard on alternative port to avoid conflict
-        logger.info("🌐 Starting REAL MONEY dashboard on http://0.0.0.0:8080")
-        app.run(host='0.0.0.0', port=8080, debug=False, threaded=True)
+        # Start Flask dashboard on production port
+        logger.info("🌐 Starting PRODUCTION dashboard on http://0.0.0.0:5000")
+        app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
     except KeyboardInterrupt:
         logger.info("🛑 Shutting down REAL MONEY system...")
         automation_active = False
